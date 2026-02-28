@@ -39,6 +39,23 @@
     .listItem{ border:1px solid #eee; border-radius:12px; padding:10px; margin:8px 0; }
     .two{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
     .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#f1f3ff; padding:2px 6px; border-radius:8px; }
+
+    /* ✅ Nice reading formatting */
+    #kidText{
+      max-width: 760px;
+      margin: 0 auto;
+      font-size: 17px;
+      line-height: 1.75;
+      letter-spacing: 0.1px;
+      color: #111;
+    }
+    #kidText p{ margin: 0 0 14px 0; }
+    #kidText .title{
+      font-size: 22px;
+      font-weight: 900;
+      margin: 22px 0 10px 0;
+      letter-spacing: 0.2px;
+    }
   </style>
 </head>
 
@@ -78,7 +95,8 @@
       <div class="card">
         <div class="pill">Tekst</div>
         <h2 id="kidTitle">—</h2>
-        <div id="kidText" style="white-space:pre-wrap; line-height:1.55;"></div>
+        <!-- ✅ Removed pre-wrap inline style -->
+        <div id="kidText"></div>
       </div>
 
       <div class="card">
@@ -205,6 +223,10 @@
   const KEY = "bl_multi_lessons_v2";
   const PIN_KEY = "bl_parent_pin_v1";
 
+  function cryptoRandomId(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+
   const defaultDB = {
     lessons: [
       {
@@ -241,7 +263,6 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
       if(!raw) return structuredClone(defaultDB);
       const db = JSON.parse(raw);
       if(!db || !Array.isArray(db.lessons) || db.lessons.length===0) return structuredClone(defaultDB);
-      // normalize
       db.lessons.forEach(l=>{
         l.id = l.id || cryptoRandomId();
         l.title = l.title || "Zonder titel";
@@ -254,19 +275,61 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     }
   }
 
-  function saveDB(){
-    localStorage.setItem(KEY, JSON.stringify(DB));
+  function saveDB(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
+
+  // ✅ Safe HTML for formatting
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
   }
 
-  function cryptoRandomId(){
-    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  // ✅ Convert plain text into nice readable HTML
+  function formatReadingText(txt){
+    if(!txt) return "";
+    txt = txt.replace(/\r/g, "");
+
+    // allow separators like --- (optional)
+    txt = txt.replace(/^\s*---\s*$/gm, "\n\n");
+
+    // split blocks by empty line
+    const blocks = txt.split(/\n\s*\n/);
+
+    let html = "";
+    for(const block of blocks){
+      const clean = block.trim();
+      if(!clean) continue;
+
+      const lines = clean.split("\n").map(l=>l.trim()).filter(Boolean);
+      const isSingleLine = lines.length === 1;
+      const line = lines[0] || "";
+
+      // detect subtitle lines
+      const looksLikeTitle =
+        isSingleLine &&
+        line.length <= 60 &&
+        !line.endsWith(".") &&
+        !line.endsWith(",") &&
+        !line.endsWith(";");
+
+      if(looksLikeTitle){
+        html += `<div class="title">${escapeHtml(line)}</div>`;
+      }else{
+        // keep single line breaks inside a paragraph
+        const paragraph = lines.map(l=>escapeHtml(l)).join("<br>");
+        html += `<p>${paragraph}</p>`;
+      }
+    }
+    return html;
   }
 
   let DB = loadDB();
   let currentLessonId = DB.lessons[0].id;
 
-  // Student answers per lesson (not saved)
-  let answers = {}; // qIndex -> chosenIndex
+  let answers = {};
   let score = 0;
 
   // ---------------- Tabs ----------------
@@ -295,18 +358,8 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     }
   }
 
-  // ---------------- Helpers ----------------
   function getLessonById(id){
     return DB.lessons.find(l=>l.id===id) || DB.lessons[0];
-  }
-
-  function escapeHtml(str){
-    return String(str)
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
   }
 
   function idxToLetter(i){ return ["A","B","C","D"][i] || "?"; }
@@ -349,9 +402,10 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     currentLessonId = lesson.id;
 
     kidTitle.textContent = lesson.title || "—";
-    kidText.innerHTML = lesson.text || "";
-    scoreTotal.textContent = lesson.questions.length;
+    // ✅ formatted readable text
+    kidText.innerHTML = formatReadingText(lesson.text || "");
 
+    scoreTotal.textContent = lesson.questions.length;
     renderQuestions(lesson);
     recomputeScore(lesson);
   }
@@ -363,7 +417,7 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
       box.className = "q";
 
       const title = document.createElement("div");
-      title.innerHTML = `<strong>Vraag ${qi+1}.</strong> ${q.text || ""}`;
+      title.innerHTML = `<strong>Vraag ${qi+1}.</strong> ${escapeHtml(q.text || "")}`;
       box.appendChild(title);
 
       (q.options || []).forEach((opt, oi)=>{
@@ -437,7 +491,6 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
 
   document.getElementById("savePin").onclick = ()=>{
     const v = (pinSet.value || "").trim();
-    // allow empty
     if(v && !/^[0-9]{4,8}$/.test(v)){
       pinMsg.textContent = "Gebruik 4 tot 8 cijfers (of laat leeg).";
       return;
@@ -481,7 +534,6 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     currentLessonId = lesson.id;
     editTitle.value = lesson.title || "";
     editText.value = lesson.text || "";
-    // clear question inputs
     document.getElementById("qText").value = "";
     ["a0","a1","a2","a3"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("correct").value = "0";
@@ -494,7 +546,7 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     currentLessonId = newLesson.id;
     saveDB();
     renderParent();
-    renderKid(); // update dropdown for student too
+    renderKid();
   };
 
   document.getElementById("deleteLesson").onclick = ()=>{
@@ -507,8 +559,7 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     currentLessonId = DB.lessons[0].id;
     saveDB();
     renderParent();
-    answers = {};
-    score = 0;
+    answers = {}; score = 0;
     renderKid();
   };
 
@@ -536,7 +587,6 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     lesson.questions.push({ text: qt, options: opts, correctIndex, explanation });
     saveDB();
 
-    // clear inputs
     document.getElementById("qText").value = "";
     ["a0","a1","a2","a3"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("correct").value = "0";
@@ -612,7 +662,6 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
       try{
         const parsed = JSON.parse(txt);
         if(!parsed || !Array.isArray(parsed.lessons)) throw new Error();
-        // basic normalize
         parsed.lessons.forEach(l=>{
           l.id = l.id || cryptoRandomId();
           l.title = l.title || "Zonder titel";
