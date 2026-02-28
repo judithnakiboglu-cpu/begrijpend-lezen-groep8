@@ -771,6 +771,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 function pickRandomSticker(){
   return STICKERS[Math.floor(Math.random()*STICKERS.length)];
 }
+    const total = lesson.questions.length;
+    const correct = quiz.correctCount;
+    const wrong = total - correct;
+
     const stickerWon = (wrong <= 1);
     const chosenSticker = stickerWon ? pickRandomSticker() : null;
 
