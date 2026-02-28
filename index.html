@@ -1,98 +1,640 @@
 <!doctype html>
 <html lang="nl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Begrijpend Lezen – Multi Les</title>
-<style>
-body{font-family:system-ui,Arial;margin:0;background:#f6f7fb}
-.wrap{max-width:1000px;margin:auto;padding:16px}
-.card{background:white;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
-button{padding:10px 12px;border:0;border-radius:10px;cursor:pointer}
-.primary{background:#2e5bff;color:white}
-.ghost{background:#eef2ff}
-.q{border:1px solid #eee;padding:10px;border-radius:10px;margin:10px 0}
-.opt{display:block;margin:6px 0}
-.good{background:#e9fbef;padding:8px;border-radius:10px}
-.bad{background:#fff0f0;padding:8px;border-radius:10px}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Begrijpend Lezen – Groep 8</title>
+  <style>
+    :root{ --blue:#2e5bff; --bg:#f6f7fb; --card:#fff; --muted:#5a6079; --border:#e6e8f2; }
+    *{ box-sizing:border-box; }
+    body{ font-family:system-ui, Arial; margin:0; background:var(--bg); }
+    .wrap{ max-width:1000px; margin:0 auto; padding:16px; }
+    .card{ background:var(--card); border-radius:16px; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.08); margin-bottom:12px; }
+    .topbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    h1{ font-size:20px; margin:0; }
+    h2{ font-size:16px; margin:8px 0; }
+    .muted{ color:var(--muted); }
+    .small{ font-size:12px; }
+    .tabs{ display:flex; gap:8px; }
+    button{ border:0; border-radius:12px; padding:10px 12px; cursor:pointer; }
+    .tab{ background:#e9ecf8; }
+    .tab.active{ background:var(--blue); color:white; }
+    .primary{ background:var(--blue); color:white; }
+    .ghost{ background:#eef2ff; }
+    .danger{ background:#ff3b30; color:white; }
+    input, textarea, select{ width:100%; padding:10px; border-radius:12px; border:1px solid #d9dbe7; }
+    textarea{ min-height:110px; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; }
+    .row > *{ flex:1; min-width:220px; }
+    .pill{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; background:#eef2ff; }
+    .q{ padding:12px; border-radius:12px; border:1px solid #eee; margin:10px 0; }
+    .opt{ display:block; padding:8px 10px; border-radius:10px; border:1px solid var(--border); margin:8px 0; cursor:pointer; }
+    .opt:hover{ background:#f3f5ff; }
+    .feedback{ margin-top:8px; padding:10px; border-radius:12px; }
+    .good{ background:#e9fbef; border:1px solid #b7ebc7; }
+    .bad{ background:#fff0f0; border:1px solid #ffcccc; }
+    .ok{ color:#137333; font-weight:700; }
+    .no{ color:#b00020; font-weight:700; }
+    .hr{ border:none; border-top:1px solid #eee; margin:14px 0; }
+    .listItem{ border:1px solid #eee; border-radius:12px; padding:10px; margin:8px 0; }
+    .two{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#f1f3ff; padding:2px 6px; border-radius:8px; }
+  </style>
 </head>
+
 <body>
-<div class="wrap">
-<div class="card">
-<h2>Les kiezen</h2>
-<select id="lessonSelect"></select>
-<button class="ghost" id="newLesson">Nieuwe les</button>
-</div>
+  <div class="wrap">
+    <div class="card">
+      <div class="topbar">
+        <div>
+          <h1>Begrijpend Lezen – Groep 8</h1>
+          <div class="muted small">Leerling oefent ✅❌ — Ouder maakt teksten & vragen</div>
+        </div>
+        <div class="tabs">
+          <button class="tab active" id="tabKid" type="button">Leerling</button>
+          <button class="tab" id="tabParent" type="button">Ouder</button>
+        </div>
+      </div>
+    </div>
 
-<div class="card" id="kid">
-<h2 id="title"></h2>
-<div id="text" style="white-space:pre-wrap"></div>
-<div id="questions"></div>
-</div>
+    <!-- LEERLING -->
+    <div id="kidView">
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="pill">Tekst kiezen</div>
+            <select id="lessonSelect"></select>
+            <div class="muted small" style="margin-top:6px;">
+              Tip: gebruik <span class="kbd">Opnieuw</span> om opnieuw te oefenen.
+            </div>
+          </div>
+          <div class="topbar" style="justify-content:flex-end;">
+            <div class="pill">Score: <span id="scoreNow">0</span>/<span id="scoreTotal">0</span></div>
+            <button class="ghost" id="resetAnswers" type="button">Opnieuw</button>
+          </div>
+        </div>
+      </div>
 
-<div class="card">
-<h3>Ouder modus</h3>
-<input id="titleInput" placeholder="Titel"><br><br>
-<textarea id="textInput" placeholder="Tekst" style="width:100%;height:120px"></textarea><br><br>
-<button class="primary" id="saveLesson">Opslaan les</button>
-<hr>
-<input id="q" placeholder="Vraag"><br><br>
-<input id="a0" placeholder="A"><br>
-<input id="a1" placeholder="B"><br>
-<input id="a2" placeholder="C"><br>
-<input id="a3" placeholder="D"><br>
-<select id="correct"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select>
-<button class="primary" id="addQ">Voeg vraag toe</button>
-</div>
-</div>
+      <div class="card">
+        <div class="pill">Tekst</div>
+        <h2 id="kidTitle">—</h2>
+        <div id="kidText" style="white-space:pre-wrap; line-height:1.55;"></div>
+      </div>
+
+      <div class="card">
+        <div class="pill">Vragen</div>
+        <div class="muted small">Klik een antwoord → je krijgt meteen feedback.</div>
+        <div id="questions"></div>
+      </div>
+    </div>
+
+    <!-- OUDER -->
+    <div id="parentView" style="display:none;">
+      <div class="card" id="parentLockCard">
+        <div class="pill">Ouder-modus beveiligen (optioneel)</div>
+        <div class="muted small" style="margin:8px 0 12px;">
+          Je kunt een pincode instellen zodat je zoon niet per ongeluk dingen wijzigt.
+          Laat leeg als je geen pincode wilt.
+        </div>
+        <div class="row">
+          <div>
+            <label class="muted small">Pincode (4 cijfers, optioneel)</label>
+            <input id="pinSet" inputmode="numeric" placeholder="Bijv. 1234" maxlength="8">
+          </div>
+          <div>
+            <label class="muted small">Pincode invoeren</label>
+            <input id="pinEnter" inputmode="numeric" placeholder="(als je pin hebt ingesteld)">
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <button class="primary" id="savePin" type="button">Pincode opslaan</button>
+          <button class="ghost" id="unlock" type="button">Ouder-modus openen</button>
+        </div>
+        <div class="muted small" id="pinMsg" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="card" id="parentEditor" style="display:none;">
+        <div class="topbar">
+          <div>
+            <div class="pill">Lessen (meerdere teksten)</div>
+            <div class="muted small">Maak bv. 10 teksten met elk ~15 vragen.</div>
+          </div>
+          <div class="row" style="margin:0;">
+            <button class="primary" id="addLesson" type="button">Nieuwe tekst</button>
+            <button class="ghost" id="exportData" type="button">Export (backup)</button>
+            <button class="ghost" id="importData" type="button">Import</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row">
+          <div>
+            <label class="muted small">Kies tekst</label>
+            <select id="parentLessonSelect"></select>
+          </div>
+          <div>
+            <label class="muted small">Tekst verwijderen</label>
+            <button class="danger" id="deleteLesson" type="button">Verwijder deze tekst</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="pill">Tekst bewerken</div>
+        <div class="row" style="margin-top:8px;">
+          <div>
+            <label class="muted small">Titel</label>
+            <input id="editTitle" placeholder="Bijv. De storm op zee">
+          </div>
+        </div>
+        <label class="muted small">Tekst</label>
+        <textarea id="editText" placeholder="Plak hier de begrijpend-lezen tekst..."></textarea>
+        <div class="row" style="margin-top:10px;">
+          <button class="primary" id="saveLesson" type="button">Opslaan</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="pill">Vraag toevoegen (meerkeuze)</div>
+        <div class="row" style="margin-top:8px;">
+          <div>
+            <label class="muted small">Vraag</label>
+            <input id="qText" placeholder="Bijv. Waarom ging de boot terug?">
+          </div>
+        </div>
+
+        <div class="row">
+          <div><label class="muted small">A</label><input id="a0" placeholder="Antwoord A"></div>
+          <div><label class="muted small">B</label><input id="a1" placeholder="Antwoord B"></div>
+        </div>
+        <div class="row">
+          <div><label class="muted small">C</label><input id="a2" placeholder="Antwoord C"></div>
+          <div><label class="muted small">D</label><input id="a3" placeholder="Antwoord D"></div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label class="muted small">Juiste antwoord</label>
+            <select id="correct">
+              <option value="0">A</option><option value="1">B</option>
+              <option value="2">C</option><option value="3">D</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted small">Uitleg/feedback (optioneel)</label>
+            <input id="explain" placeholder="Bijv. In alinea 2 staat dat...">
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <button class="primary" id="addQuestion" type="button">Vraag toevoegen</button>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="pill">Vragenlijst</div>
+        <div class="muted small">Je kunt vragen verwijderen (handig als je er 15 per tekst maakt).</div>
+        <div id="questionList"></div>
+      </div>
+    </div>
+  </div>
+
 <script>
-const KEY='bl_multi_v1';
-let db=JSON.parse(localStorage.getItem(KEY)||'{"lessons":[]}');
-let current=0;
+  // ---------------- Storage ----------------
+  const KEY = "bl_multi_lessons_v2";
+  const PIN_KEY = "bl_parent_pin_v1";
 
-function save(){localStorage.setItem(KEY,JSON.stringify(db));renderLessons();renderKid();}
+  const defaultDB = {
+    lessons: [
+      {
+        id: cryptoRandomId(),
+        title: "Voorbeeld: De ijsjeswedstrijd",
+        text:
+`Saar en Amin doen mee aan een ijsjeswedstrijd. Ze moeten in tien minuten zoveel mogelijk ijsjes verkopen.
+Amin is snel met rekenen, maar praat zacht. Saar praat heel overtuigend, maar moet soms langer nadenken over geld teruggeven.
 
-function renderLessons(){
- const sel=document.getElementById('lessonSelect');
- sel.innerHTML='';
- db.lessons.forEach((l,i)=>{const o=document.createElement('option');o.value=i;o.text=l.title||('Les '+(i+1));sel.appendChild(o)});
- sel.value=current;
-}
+Na vijf minuten heeft Saar meer ijsjes verkocht dan Amin. Amin ziet dat Saar bij elke klant glimlacht en een kort praatje maakt.
+Daarna probeert Amin hetzelfde te doen. Hij praat iets harder en maakt ook een grapje.
 
-document.getElementById('lessonSelect').onchange=e=>{current=+e.target.value;renderKid();}
+Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft iets geleerd dat hij morgen weer kan gebruiken.`,
+        questions: [
+          {
+            text: "Waarom verkocht Saar in het begin meer ijsjes?",
+            options: [
+              "Omdat ze sneller kon rekenen",
+              "Omdat ze overtuigend praatte en glimlachte",
+              "Omdat ze goedkoper was",
+              "Omdat Amin niet wilde verkopen"
+            ],
+            correctIndex: 1,
+            explanation: "In alinea 2 staat dat Saar glimlacht en een praatje maakt; dat helpt bij verkopen."
+          }
+        ]
+      }
+    ]
+  };
 
-document.getElementById('newLesson').onclick=()=>{db.lessons.push({title:'Nieuwe les',text:'',questions:[]});current=db.lessons.length-1;save();}
+  function loadDB(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(!raw) return structuredClone(defaultDB);
+      const db = JSON.parse(raw);
+      if(!db || !Array.isArray(db.lessons) || db.lessons.length===0) return structuredClone(defaultDB);
+      // normalize
+      db.lessons.forEach(l=>{
+        l.id = l.id || cryptoRandomId();
+        l.title = l.title || "Zonder titel";
+        l.text = l.text || "";
+        l.questions = Array.isArray(l.questions) ? l.questions : [];
+      });
+      return db;
+    }catch{
+      return structuredClone(defaultDB);
+    }
+  }
 
-document.getElementById('saveLesson').onclick=()=>{const l=db.lessons[current];l.title=titleInput.value;l.text=textInput.value;save();}
+  function saveDB(){
+    localStorage.setItem(KEY, JSON.stringify(DB));
+  }
 
-document.getElementById('addQ').onclick=()=>{
- const l=db.lessons[current];
- l.questions.push({text:q.value,options:[a0.value,a1.value,a2.value,a3.value],correct:+correct.value});
- q.value=a0.value=a1.value=a2.value=a3.value='';save();
-}
+  function cryptoRandomId(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
 
-function renderKid(){
- const l=db.lessons[current];if(!l)return;
- title.textContent=l.title;text.textContent=l.text;
- const qd=document.getElementById('questions');qd.innerHTML='';
- l.questions.forEach((q,i)=>{
-  const d=document.createElement('div');d.className='q';
-  d.innerHTML='<b>Vraag '+(i+1)+':</b> '+q.text;
-  q.options.forEach((o,oi)=>{
-   const lab=document.createElement('label');lab.className='opt';
-   const r=document.createElement('input');r.type='radio';r.name='q'+i;
-   r.onchange=()=>{fb.className=(oi==q.correct?'good':'bad');fb.textContent=(oi==q.correct?'Goed!':'Niet goed')};
-   lab.appendChild(r);lab.append(o);d.appendChild(lab);
-  });
-  const fb=document.createElement('div');d.appendChild(fb);
-  qd.appendChild(d);
- });
-}
+  let DB = loadDB();
+  let currentLessonId = DB.lessons[0].id;
 
-if(db.lessons.length==0)db.lessons.push({title:'Voorbeeld',text:'Plak hier tekst',questions:[]});
-save();
+  // Student answers per lesson (not saved)
+  let answers = {}; // qIndex -> chosenIndex
+  let score = 0;
+
+  // ---------------- Tabs ----------------
+  const tabKid = document.getElementById("tabKid");
+  const tabParent = document.getElementById("tabParent");
+  const kidView = document.getElementById("kidView");
+  const parentView = document.getElementById("parentView");
+
+  tabKid.onclick = ()=> setMode("kid");
+  tabParent.onclick = ()=> setMode("parent");
+
+  function setMode(mode){
+    if(mode==="kid"){
+      tabKid.classList.add("active");
+      tabParent.classList.remove("active");
+      kidView.style.display = "";
+      parentView.style.display = "none";
+      renderKid();
+    }else{
+      tabParent.classList.add("active");
+      tabKid.classList.remove("active");
+      kidView.style.display = "none";
+      parentView.style.display = "";
+      setupParentLock();
+      renderParent();
+    }
+  }
+
+  // ---------------- Helpers ----------------
+  function getLessonById(id){
+    return DB.lessons.find(l=>l.id===id) || DB.lessons[0];
+  }
+
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function idxToLetter(i){ return ["A","B","C","D"][i] || "?"; }
+
+  // ---------------- Kid UI ----------------
+  const lessonSelect = document.getElementById("lessonSelect");
+  const kidTitle = document.getElementById("kidTitle");
+  const kidText = document.getElementById("kidText");
+  const questionsDiv = document.getElementById("questions");
+  const scoreNow = document.getElementById("scoreNow");
+  const scoreTotal = document.getElementById("scoreTotal");
+
+  lessonSelect.onchange = (e)=>{
+    currentLessonId = e.target.value;
+    answers = {};
+    score = 0;
+    renderKid();
+  };
+
+  document.getElementById("resetAnswers").onclick = ()=>{
+    answers = {};
+    score = 0;
+    renderKid();
+  };
+
+  function renderLessonDropdown(selectEl){
+    selectEl.innerHTML = "";
+    DB.lessons.forEach(l=>{
+      const opt = document.createElement("option");
+      opt.value = l.id;
+      opt.textContent = l.title;
+      selectEl.appendChild(opt);
+    });
+    selectEl.value = currentLessonId;
+  }
+
+  function renderKid(){
+    renderLessonDropdown(lessonSelect);
+    const lesson = getLessonById(currentLessonId);
+    currentLessonId = lesson.id;
+
+    kidTitle.textContent = lesson.title || "—";
+    kidText.textContent = lesson.text || "";
+    scoreTotal.textContent = lesson.questions.length;
+
+    renderQuestions(lesson);
+    recomputeScore(lesson);
+  }
+
+  function renderQuestions(lesson){
+    questionsDiv.innerHTML = "";
+    lesson.questions.forEach((q, qi)=>{
+      const box = document.createElement("div");
+      box.className = "q";
+
+      const title = document.createElement("div");
+      title.innerHTML = `<strong>Vraag ${qi+1}.</strong> ${escapeHtml(q.text || "")}`;
+      box.appendChild(title);
+
+      (q.options || []).forEach((opt, oi)=>{
+        const lab = document.createElement("label");
+        lab.className = "opt";
+
+        const r = document.createElement("input");
+        r.type = "radio";
+        r.name = "q" + qi;
+        r.value = oi;
+        r.style.marginRight = "8px";
+        if(answers[qi] === oi) r.checked = true;
+
+        r.onchange = ()=>{
+          answers[qi] = oi;
+          showFeedback(box, q, qi);
+          recomputeScore(lesson);
+        };
+
+        lab.appendChild(r);
+        lab.appendChild(document.createTextNode(opt || ""));
+        box.appendChild(lab);
+      });
+
+      const fb = document.createElement("div");
+      fb.id = "fb" + qi;
+      box.appendChild(fb);
+
+      questionsDiv.appendChild(box);
+
+      if(answers[qi] !== undefined) showFeedback(box, q, qi);
+    });
+  }
+
+  function showFeedback(box, q, qi){
+    const fb = box.querySelector("#fb"+qi);
+    const chosen = answers[qi];
+    const good = chosen === q.correctIndex;
+
+    fb.className = "feedback " + (good ? "good" : "bad");
+    const explain = q.explanation ? `<div class="muted small" style="margin-top:6px;">${escapeHtml(q.explanation)}</div>` : "";
+    fb.innerHTML = good
+      ? `<span class="ok">✅ Goed!</span>${explain}`
+      : `<span class="no">❌ Niet helemaal.</span> <span class="muted small">Juiste antwoord: ${idxToLetter(q.correctIndex)}</span>${explain}`;
+  }
+
+  function recomputeScore(lesson){
+    score = 0;
+    lesson.questions.forEach((q, qi)=>{
+      if(answers[qi] === q.correctIndex) score++;
+    });
+    scoreNow.textContent = score;
+  }
+
+  // ---------------- Parent lock ----------------
+  const parentLockCard = document.getElementById("parentLockCard");
+  const parentEditor = document.getElementById("parentEditor");
+  const pinSet = document.getElementById("pinSet");
+  const pinEnter = document.getElementById("pinEnter");
+  const pinMsg = document.getElementById("pinMsg");
+
+  function getPin(){ return localStorage.getItem(PIN_KEY) || ""; }
+
+  function setupParentLock(){
+    pinMsg.textContent = "";
+    pinSet.value = getPin();
+    pinEnter.value = "";
+    parentEditor.style.display = "none";
+    parentLockCard.style.display = "";
+  }
+
+  document.getElementById("savePin").onclick = ()=>{
+    const v = (pinSet.value || "").trim();
+    // allow empty
+    if(v && !/^[0-9]{4,8}$/.test(v)){
+      pinMsg.textContent = "Gebruik 4 tot 8 cijfers (of laat leeg).";
+      return;
+    }
+    localStorage.setItem(PIN_KEY, v);
+    pinMsg.textContent = v ? "Pincode opgeslagen." : "Geen pincode ingesteld.";
+  };
+
+  document.getElementById("unlock").onclick = ()=>{
+    const saved = getPin();
+    const entered = (pinEnter.value || "").trim();
+    if(saved && entered !== saved){
+      pinMsg.textContent = "Pincode klopt niet.";
+      return;
+    }
+    parentLockCard.style.display = "none";
+    parentEditor.style.display = "";
+    renderParent();
+  };
+
+  // ---------------- Parent editor ----------------
+  const parentLessonSelect = document.getElementById("parentLessonSelect");
+  const editTitle = document.getElementById("editTitle");
+  const editText = document.getElementById("editText");
+  const questionList = document.getElementById("questionList");
+
+  parentLessonSelect.onchange = (e)=>{
+    currentLessonId = e.target.value;
+    fillEditor();
+    renderQuestionList();
+  };
+
+  function renderParent(){
+    renderLessonDropdown(parentLessonSelect);
+    fillEditor();
+    renderQuestionList();
+  }
+
+  function fillEditor(){
+    const lesson = getLessonById(currentLessonId);
+    currentLessonId = lesson.id;
+    editTitle.value = lesson.title || "";
+    editText.value = lesson.text || "";
+    // clear question inputs
+    document.getElementById("qText").value = "";
+    ["a0","a1","a2","a3"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("correct").value = "0";
+    document.getElementById("explain").value = "";
+  }
+
+  document.getElementById("addLesson").onclick = ()=>{
+    const newLesson = { id: cryptoRandomId(), title: "Nieuwe tekst", text: "", questions: [] };
+    DB.lessons.unshift(newLesson);
+    currentLessonId = newLesson.id;
+    saveDB();
+    renderParent();
+    renderKid(); // update dropdown for student too
+  };
+
+  document.getElementById("deleteLesson").onclick = ()=>{
+    if(DB.lessons.length <= 1){
+      alert("Je moet minstens 1 tekst hebben.");
+      return;
+    }
+    if(!confirm("Weet je zeker dat je deze tekst wilt verwijderen?")) return;
+    DB.lessons = DB.lessons.filter(l=>l.id !== currentLessonId);
+    currentLessonId = DB.lessons[0].id;
+    saveDB();
+    renderParent();
+    answers = {};
+    score = 0;
+    renderKid();
+  };
+
+  document.getElementById("saveLesson").onclick = ()=>{
+    const lesson = getLessonById(currentLessonId);
+    lesson.title = (editTitle.value || "").trim() || "Zonder titel";
+    lesson.text = (editText.value || "").trim();
+    saveDB();
+    renderLessonDropdown(parentLessonSelect);
+    renderLessonDropdown(lessonSelect);
+    renderKid();
+    alert("Opgeslagen!");
+  };
+
+  document.getElementById("addQuestion").onclick = ()=>{
+    const lesson = getLessonById(currentLessonId);
+    const qt = (document.getElementById("qText").value || "").trim();
+    const opts = ["a0","a1","a2","a3"].map(id => (document.getElementById(id).value || "").trim());
+    const correctIndex = Number(document.getElementById("correct").value);
+    const explanation = (document.getElementById("explain").value || "").trim();
+
+    if(!qt){ alert("Vul een vraag in."); return; }
+    if(opts.some(o=>!o)){ alert("Vul alle 4 antwoordopties in."); return; }
+
+    lesson.questions.push({ text: qt, options: opts, correctIndex, explanation });
+    saveDB();
+
+    // clear inputs
+    document.getElementById("qText").value = "";
+    ["a0","a1","a2","a3"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("correct").value = "0";
+    document.getElementById("explain").value = "";
+
+    renderQuestionList();
+    answers = {}; score = 0;
+    renderKid();
+  };
+
+  function renderQuestionList(){
+    const lesson = getLessonById(currentLessonId);
+    questionList.innerHTML = "";
+
+    if(lesson.questions.length === 0){
+      questionList.innerHTML = `<div class="muted">Nog geen vragen. Voeg hierboven vragen toe (bv. 15).</div>`;
+      return;
+    }
+
+    lesson.questions.forEach((q, i)=>{
+      const div = document.createElement("div");
+      div.className = "listItem";
+      div.innerHTML = `
+        <div class="two">
+          <div><strong>${i+1}.</strong> ${escapeHtml(q.text || "")}</div>
+          <button class="danger" type="button" data-del="${i}">Verwijder</button>
+        </div>
+        <div class="muted small" style="margin-top:6px;">
+          A: ${escapeHtml((q.options||[])[0]||"")}<br>
+          B: ${escapeHtml((q.options||[])[1]||"")}<br>
+          C: ${escapeHtml((q.options||[])[2]||"")}<br>
+          D: ${escapeHtml((q.options||[])[3]||"")}<br>
+          <strong>Juiste antwoord:</strong> ${idxToLetter(q.correctIndex)}
+          ${q.explanation ? `<br><strong>Uitleg:</strong> ${escapeHtml(q.explanation)}` : ""}
+        </div>
+      `;
+      questionList.appendChild(div);
+    });
+
+    questionList.querySelectorAll("button[data-del]").forEach(btn=>{
+      btn.onclick = ()=>{
+        const idx = Number(btn.getAttribute("data-del"));
+        const lesson = getLessonById(currentLessonId);
+        lesson.questions.splice(idx, 1);
+        saveDB();
+        renderQuestionList();
+        answers = {}; score=0;
+        renderKid();
+      };
+    });
+  }
+
+  // ---------------- Import/Export ----------------
+  document.getElementById("exportData").onclick = ()=>{
+    const dataStr = JSON.stringify(DB, null, 2);
+    const blob = new Blob([dataStr], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "begrijpend-lezen-backup.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  document.getElementById("importData").onclick = async ()=>{
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "application/json";
+    inp.onchange = async ()=>{
+      const file = inp.files?.[0];
+      if(!file) return;
+      const txt = await file.text();
+      try{
+        const parsed = JSON.parse(txt);
+        if(!parsed || !Array.isArray(parsed.lessons)) throw new Error();
+        // basic normalize
+        parsed.lessons.forEach(l=>{
+          l.id = l.id || cryptoRandomId();
+          l.title = l.title || "Zonder titel";
+          l.text = l.text || "";
+          l.questions = Array.isArray(l.questions) ? l.questions : [];
+        });
+        DB = parsed;
+        currentLessonId = DB.lessons[0]?.id || cryptoRandomId();
+        saveDB();
+        alert("Import gelukt!");
+        renderParent();
+        answers={}; score=0;
+        renderKid();
+      }catch{
+        alert("Import mislukt: dit bestand is geen geldige backup.");
+      }
+    };
+    inp.click();
+  };
+
+  // Init
+  setMode("kid");
 </script>
 </body>
 </html>
-
