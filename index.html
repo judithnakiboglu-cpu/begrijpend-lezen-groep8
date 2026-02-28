@@ -746,90 +746,89 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       : `<span class="no">❌ Fout.</span> <span class="muted small">Juiste antwoord: ${idxToLetter(q.correctIndex)}</span>${explain}`;
   }
 
-  function finishQuiz(){
-    const lesson = getLessonById(currentLessonId);
-    const total = lesson.questions.length;
-    const correct = quiz.correctCount;
-    const wrong = total - correct;
-
-    const details = lesson.questions.map((q, i)=>({
-      qIndex: i,
-      question: q.text || "",
-      chosenIndex: quiz.answers[i],
-      correctIndex: q.correctIndex,
-      isCorrect: quiz.answers[i] === q.correctIndex
-    }));
-
-    const attempt = {
-      id: cryptoRandomId(),
-      ts: Date.now(),
-      lessonId: lesson.id,
-      lessonTitle: lesson.title || "Zonder titel",
-      total, correct, wrong,
-      details
-    };
-
-    const history = loadHistory();
-    history.unshift(attempt);
-    saveHistory(history.slice(0, 500));
-
-    oneQuestion.innerHTML = "";
-    nextBtn.style.display = "none";
-
-    const STICKERS = [
-      { emoji:"🏆", label:"Kampioen" },
-      { emoji:"🦊", label:"Slimme vos" },
-      { emoji:"🚀", label:"Raketsnel" },
-      { emoji:"🦄", label:"Magisch goed" },
-      { emoji:"🦉", label:"Wijze uil" },
-      { emoji:"🌈", label:"Top gedaan!" },
-      { emoji:"🐼", label:"Super!" },
-      { emoji:"🎯", label:"Perfect!" }
-    ];
+  // --- Stickers (1x, globaal) ---
+const STICKERS = [
+  { emoji:"🏆", label:"Kampioen" },
+  { emoji:"🦊", label:"Slimme vos" },
+  { emoji:"🚀", label:"Raketsnel" },
+  { emoji:"🦄", label:"Magisch goed" },
+  { emoji:"🦉", label:"Wijze uil" },
+  { emoji:"🌈", label:"Top gedaan!" },
+  { emoji:"🐼", label:"Super!" },
+  { emoji:"🎯", label:"Perfect!" }
+];
 
 function pickRandomSticker(){
-  return STICKERS[Math.floor(Math.random()*STICKERS.length)];
+  return STICKERS[Math.floor(Math.random() * STICKERS.length)];
 }
-    const total = lesson.questions.length;
-    const correct = quiz.correctCount;
-    const wrong = total - correct;
 
-    const stickerWon = (wrong <= 1);
-    const chosenSticker = stickerWon ? pickRandomSticker() : null;
+  
+function finishQuiz(){
+  const lesson = getLessonById(currentLessonId);
+  const total = lesson.questions.length;
+  const correct = quiz.correctCount;
+  const wrong = total - correct;
 
-    endScreen.style.display = "";
-    endScreen.innerHTML = `
-      <div class="center">
-        <div class="pill">Resultaat</div>
-        <h2 style="margin-top:10px;">Score: ${correct}/${total}</h2>
-        <div class="muted">Fouten: ${wrong}</div>
-        <div style="height:12px;"></div>
+  const details = lesson.questions.map((q, i)=>({
+    qIndex: i,
+    question: q.text || "",
+    chosenIndex: quiz.answers[i],
+    correctIndex: q.correctIndex,
+    isCorrect: quiz.answers[i] === q.correctIndex
+  }));
 
-        ${stickerWon ? `
-          <div class="center">
-            <div class="bigSticker" title="${escapeHtml(chosenSticker.label)}">
-              ${chosenSticker.emoji}
-            </div>
-            <div class="muted" style="margin-top:8px;">
-              <strong>Sticker verdiend!</strong> (${escapeHtml(chosenSticker.label)})
-            </div>
+  const attempt = {
+    id: cryptoRandomId(),
+    ts: Date.now(),
+    lessonId: lesson.id,
+    lessonTitle: lesson.title || "Zonder titel",
+    total, correct, wrong,
+    details
+  };
+
+  const history = loadHistory();
+  history.unshift(attempt);
+  saveHistory(history.slice(0, 500));
+
+  oneQuestion.innerHTML = "";
+  nextBtn.style.display = "none";
+
+  const stickerWon = (wrong <= 1);
+  const chosenSticker = stickerWon ? pickRandomSticker() : null;
+
+  endScreen.style.display = "";
+  endScreen.innerHTML = `
+    <div class="center">
+      <div class="pill">Resultaat</div>
+      <h2 style="margin-top:10px;">Score: ${correct}/${total}</h2>
+      <div class="muted">Fouten: ${wrong}</div>
+      <div style="height:12px;"></div>
+
+      ${stickerWon ? `
+        <div class="center">
+          <div class="bigSticker" title="${escapeHtml(chosenSticker.label)}">
+            ${chosenSticker.emoji}
           </div>
-        ` : `
-          <div class="muted">Geen sticker deze keer. Probeer opnieuw 💪</div>
-        `}
+          <div class="muted" style="margin-top:8px;">
+            <strong>Sticker verdiend!</strong> (${escapeHtml(chosenSticker.label)})
+          </div>
+        </div>
+      ` : `
+        <div class="muted">Geen sticker deze keer. Probeer opnieuw 💪</div>
+      `}
 
-        <div style="height:14px;"></div>
-        <button class="primary" id="againBtn" type="button">Nog een keer</button>
-      </div>
-     `;
+      <div style="height:14px;"></div>
+      <button class="primary" id="againBtn" type="button">Nog een keer</button>
+    </div>
+  `;
 
-    document.getElementById("againBtn").onclick = ()=>{
-      resetQuiz();
-      renderKid();
-    };
-
+  document.getElementById("againBtn").onclick = ()=>{
     resetQuiz();
-  }
+    renderKid();
+  };
+
+  resetQuiz();
+}
 
   // ===== Parent lock =====
   const parentLockCard = document.getElementById("parentLockCard");
