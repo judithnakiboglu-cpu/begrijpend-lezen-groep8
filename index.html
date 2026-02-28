@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="nl">
 <head>
@@ -60,6 +61,25 @@
     .imgWrap{ text-align:center; margin:18px 0; }
     .imgWrap img{ max-width:100%; max-height:340px; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.15); }
 
+    /* Text + image side-by-side */
+    .textLayout{
+      display:grid;
+      grid-template-columns: 1fr 320px;
+      gap:16px;
+      align-items:start;
+    }
+    .sideMedia img{
+      width:100%;
+      max-height:420px;
+      object-fit:contain;
+      border-radius:14px;
+      box-shadow:0 6px 18px rgba(0,0,0,.12);
+      background:white;
+    }
+    @media (max-width: 850px){
+      .textLayout{ grid-template-columns: 1fr; }
+    }
+
     /* Quiz flow */
     .progress{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
     .bigSticker{
@@ -75,6 +95,17 @@
     th{ font-size:12px; color:var(--muted); font-weight:800; }
     details{ border:1px solid #eee; border-radius:12px; padding:10px; margin:10px 0; }
     summary{ cursor:pointer; font-weight:800; }
+
+    /* Optional: click image to zoom */
+    .zoomOverlay{
+      position:fixed; inset:0; background:rgba(0,0,0,.65);
+      display:none; align-items:center; justify-content:center;
+      padding:18px; z-index:9999;
+    }
+    .zoomOverlay img{
+      max-width:100%; max-height:100%;
+      border-radius:14px; background:white;
+    }
   </style>
 </head>
 
@@ -112,17 +143,17 @@
       </div>
 
       <div class="card">
-       <div class="pill">Tekst</div>
-       <h2 id="kidTitle">—</h2>
+        <div class="pill">Tekst</div>
+        <h2 id="kidTitle">—</h2>
 
-       <div class="textLayout">
-         <div id="kidText"></div>
+        <div class="textLayout">
+          <div id="kidText"></div>
 
-         <div id="kidSideMedia" class="sideMedia" style="display:none;">
-           <img id="kidImg" alt="Afbeelding" loading="lazy">
-           <div id="kidImgCaption" class="muted small" style="margin-top:6px; display:none;"></div>
-         </div>
-       </div>
+          <div id="kidSideMedia" class="sideMedia" style="display:none;">
+            <img id="kidImg" alt="Afbeelding" loading="lazy">
+            <div id="kidImgCaption" class="muted small" style="margin-top:6px; display:none;"></div>
+          </div>
+        </div>
       </div>
 
       <div class="card" id="quizCard">
@@ -201,12 +232,26 @@
             <input id="editTitle" placeholder="Bijv. Industriële revolutie">
           </div>
         </div>
-        <label class="muted small">Tekst (tip: kopjes op eigen regel + lege regel erna)</label>
+
+        <label class="muted small">Tekst (kopjes op eigen regel + lege regel erna)</label>
         <textarea id="editText" placeholder="Plak hier de tekst..."></textarea>
+
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <label class="muted small">Afbeelding URL (optioneel)</label>
+            <input id="editImgUrl" placeholder="https://...jpg / .png">
+          </div>
+          <div>
+            <label class="muted small">Bijschrift (optioneel)</label>
+            <input id="editImgCaption" placeholder="Bijv. Stoommachine van James Watt">
+          </div>
+        </div>
+
         <div class="muted small" style="margin-top:6px;">
-          Afbeelding toevoegen (optioneel): zet op een eigen regel:<br>
+          (Extra optie) In de tekst kan ook een afbeelding op eigen regel:<br>
           <span class="kbd">[img]https://...jpg[/img]</span>
         </div>
+
         <div class="row" style="margin-top:10px;">
           <button class="primary" id="saveLesson" type="button">Opslaan</button>
         </div>
@@ -285,8 +330,13 @@
     </div>
   </div>
 
+  <div class="zoomOverlay" id="zoomOverlay" title="Klik om te sluiten">
+    <img id="zoomImg" alt="Zoom">
+  </div>
+
 <script>
   // ===== Storage keys =====
+  // IMPORTANT: keep v2 to not lose previous content
   const KEY = "bl_multi_lessons_v2";
   const PIN_KEY = "bl_parent_pin_v1";
   const HISTORY_KEY = "bl_attempt_history_v1";
@@ -313,6 +363,8 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
 Stoommachines
 
 Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna een lege regel.`,
+        imageUrl: "",
+        imageCaption: "",
         questions: [
           {
             text: "Waarom verkocht Saar in het begin meer ijsjes?",
@@ -340,6 +392,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         l.id = l.id || cryptoRandomId();
         l.title = l.title || "Zonder titel";
         l.text = l.text || "";
+        l.imageUrl = l.imageUrl || "";
+        l.imageCaption = l.imageCaption || "";
         l.questions = Array.isArray(l.questions) ? l.questions : [];
       });
       return db;
@@ -377,7 +431,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   function formatReadingText(txt){
     if(!txt) return "";
     txt = txt.replace(/\r/g, "");
-    txt = txt.replace(/^\s*---\s*$/gm, "\n\n"); // optional separators
+    txt = txt.replace(/^\s*---\s*$/gm, "\n\n");
 
     const blocks = txt.split(/\n\s*\n/);
     let html = "";
@@ -389,7 +443,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       const lines = clean.split("\n").map(l=>l.trim()).filter(Boolean);
       if(lines.length === 0) continue;
 
-      // subtitle detection (single short line without punctuation end)
       const isSingleLine = lines.length === 1;
       const line = lines[0] || "";
       const looksLikeTitle =
@@ -402,12 +455,11 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         continue;
       }
 
-      // paragraph with support for [img]...[/img] lines
       const rendered = lines.map(l=>{
         if(l.startsWith("[img]") && l.endsWith("[/img]")){
           const url = l.slice(5, -6).trim();
           const safeUrl = escapeHtml(url);
-          return `<div class="imgWrap"><img src="${safeUrl}" loading="lazy"></div>`;
+          return `<div class="imgWrap"><img src="${safeUrl}" loading="lazy" alt="Afbeelding"></div>`;
         }
         return escapeHtml(l);
       }).join("<br>");
@@ -427,7 +479,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     started: false,
     qIndex: 0,
     locked: false,
-    answers: [], // chosen index or null
+    answers: [],
     correctCount: 0
   };
 
@@ -476,6 +528,11 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   const oneQuestion = document.getElementById("oneQuestion");
   const endScreen = document.getElementById("endScreen");
 
+  // side image
+  const kidSideMedia = document.getElementById("kidSideMedia");
+  const kidImg = document.getElementById("kidImg");
+  const kidImgCaption = document.getElementById("kidImgCaption");
+
   lessonSelect.onchange = (e)=>{
     currentLessonId = e.target.value;
     resetQuiz(false);
@@ -514,10 +571,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     }
   };
 
-  function resetQuiz(confirmIt){
-    if(confirmIt && quiz.started){
-      // optional confirm; keep simple
-    }
+  function resetQuiz(){
     quiz.started = false;
     quiz.qIndex = 0;
     quiz.locked = false;
@@ -536,6 +590,26 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     selectEl.value = currentLessonId;
   }
 
+  function setSideImage(lesson){
+    const url = (lesson.imageUrl || "").trim();
+    const cap = (lesson.imageCaption || "").trim();
+
+    if(url){
+      kidImg.src = url;
+      kidSideMedia.style.display = "";
+      if(cap){
+        kidImgCaption.textContent = cap;
+        kidImgCaption.style.display = "";
+      }else{
+        kidImgCaption.style.display = "none";
+      }
+    }else{
+      kidSideMedia.style.display = "none";
+      kidImg.removeAttribute("src");
+      kidImgCaption.style.display = "none";
+    }
+  }
+
   function renderKid(){
     renderLessonDropdown(lessonSelect);
     const lesson = getLessonById(currentLessonId);
@@ -544,13 +618,14 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     kidTitle.textContent = lesson.title || "—";
     kidText.innerHTML = formatReadingText(lesson.text || "");
 
+    setSideImage(lesson);
+
     progTotal.textContent = lesson.questions.length;
     scoreTotal.textContent = lesson.questions.length;
 
     scoreNow.textContent = quiz.correctCount;
     progNow.textContent = quiz.started ? (lesson.questions.length ? (quiz.qIndex + 1) : 0) : 0;
 
-    // buttons
     if(!quiz.started){
       startBtn.style.display = "";
       nextBtn.style.display = "none";
@@ -599,7 +674,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
       if(!quiz.locked){
         lab.onclick = (ev)=>{
-          // allow only ONE selection
           ev.preventDefault();
           lockAnswer(lesson, oi);
         };
@@ -613,7 +687,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
     oneQuestion.appendChild(box);
 
-    // show feedback if already answered
     if(chosen !== null && chosen !== undefined){
       showLockedFeedback(q, chosen);
       quiz.locked = true;
@@ -634,17 +707,12 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     if(chosenIndex === q.correctIndex) quiz.correctCount++;
 
     scoreNow.textContent = quiz.correctCount;
-
     showLockedFeedback(q, chosenIndex);
 
     nextBtn.style.display = "";
     nextBtn.textContent = (quiz.qIndex === lesson.questions.length - 1) ? "Resultaat" : "Volgende";
 
-    // disable radios after selection
-    const radios = oneQuestion.querySelectorAll('input[type="radio"]');
-    radios.forEach(r => r.disabled = true);
-
-    // remove click handlers look by rerender (simple + safe)
+    // rerender to lock UI
     setTimeout(()=> renderKid(), 50);
   }
 
@@ -665,7 +733,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     const correct = quiz.correctCount;
     const wrong = total - correct;
 
-    // build attempt details
     const details = lesson.questions.map((q, i)=>({
       qIndex: i,
       question: q.text || "",
@@ -685,10 +752,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
     const history = loadHistory();
     history.unshift(attempt);
-    // keep it reasonable
     saveHistory(history.slice(0, 500));
 
-    // show end screen
     oneQuestion.innerHTML = "";
     nextBtn.style.display = "none";
 
@@ -708,12 +773,11 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     `;
 
     document.getElementById("againBtn").onclick = ()=>{
-      resetQuiz(false);
+      resetQuiz();
       renderKid();
     };
 
-    // reset quiz state (but keep lesson selection)
-    resetQuiz(false);
+    resetQuiz();
   }
 
   // ===== Parent lock =====
@@ -759,6 +823,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   const parentLessonSelect = document.getElementById("parentLessonSelect");
   const editTitle = document.getElementById("editTitle");
   const editText = document.getElementById("editText");
+  const editImgUrl = document.getElementById("editImgUrl");
+  const editImgCaption = document.getElementById("editImgCaption");
   const questionList = document.getElementById("questionList");
 
   parentLessonSelect.onchange = (e)=>{
@@ -766,20 +832,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     fillEditor();
     renderQuestionList();
     renderHistory();
-    // keep kid dropdown updated too
     renderKid();
   };
-
-  function renderLessonDropdown(selectEl){
-    selectEl.innerHTML = "";
-    DB.lessons.forEach(l=>{
-      const opt = document.createElement("option");
-      opt.value = l.id;
-      opt.textContent = l.title;
-      selectEl.appendChild(opt);
-    });
-    selectEl.value = currentLessonId;
-  }
 
   function renderParent(){
     renderLessonDropdown(parentLessonSelect);
@@ -794,6 +848,9 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     currentLessonId = lesson.id;
     editTitle.value = lesson.title || "";
     editText.value = lesson.text || "";
+    editImgUrl.value = lesson.imageUrl || "";
+    editImgCaption.value = lesson.imageCaption || "";
+
     document.getElementById("qText").value = "";
     ["a0","a1","a2","a3"].forEach(id => document.getElementById(id).value = "");
     document.getElementById("correct").value = "0";
@@ -801,12 +858,13 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   }
 
   document.getElementById("addLesson").onclick = ()=>{
-    const newLesson = { id: cryptoRandomId(), title: "Nieuwe tekst", text: "", questions: [] };
+    const newLesson = { id: cryptoRandomId(), title: "Nieuwe tekst", text: "", imageUrl:"", imageCaption:"", questions: [] };
     DB.lessons.unshift(newLesson);
     currentLessonId = newLesson.id;
     saveDB();
     renderParent();
-    resetQuiz(false);
+    renderLessonDropdown(lessonSelect);
+    resetQuiz();
     renderKid();
   };
 
@@ -820,7 +878,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     currentLessonId = DB.lessons[0].id;
     saveDB();
     renderParent();
-    resetQuiz(false);
+    renderLessonDropdown(lessonSelect);
+    resetQuiz();
     renderKid();
   };
 
@@ -828,7 +887,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     const lesson = getLessonById(currentLessonId);
     lesson.title = (editTitle.value || "").trim() || "Zonder titel";
     lesson.text = (editText.value || "").trim();
+    lesson.imageUrl = (editImgUrl.value || "").trim();
+    lesson.imageCaption = (editImgCaption.value || "").trim();
     saveDB();
+
     renderLessonDropdown(parentLessonSelect);
     renderLessonDropdown(lessonSelect);
     renderKid();
@@ -854,7 +916,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     document.getElementById("explain").value = "";
 
     renderQuestionList();
-    resetQuiz(false);
+    resetQuiz();
     renderKid();
   };
 
@@ -894,7 +956,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         lesson.questions.splice(idx, 1);
         saveDB();
         renderQuestionList();
-        resetQuiz(false);
+        resetQuiz();
         renderKid();
       };
     });
@@ -927,6 +989,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
           l.id = l.id || cryptoRandomId();
           l.title = l.title || "Zonder titel";
           l.text = l.text || "";
+          l.imageUrl = l.imageUrl || "";
+          l.imageCaption = l.imageCaption || "";
           l.questions = Array.isArray(l.questions) ? l.questions : [];
         });
         DB = parsed;
@@ -934,7 +998,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         saveDB();
         alert("Import gelukt!");
         renderParent();
-        resetQuiz(false);
+        renderLessonDropdown(lessonSelect);
+        resetQuiz();
         renderKid();
       }catch{
         alert("Import mislukt: dit bestand is geen geldige export.");
@@ -1054,8 +1119,22 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     URL.revokeObjectURL(url);
   };
 
+  // ===== Image zoom overlay =====
+  const zoomOverlay = document.getElementById("zoomOverlay");
+  const zoomImg = document.getElementById("zoomImg");
+  kidImg.addEventListener("click", ()=>{
+    if(!kidImg.src) return;
+    zoomImg.src = kidImg.src;
+    zoomOverlay.style.display = "flex";
+  });
+  zoomOverlay.addEventListener("click", ()=>{
+    zoomOverlay.style.display = "none";
+    zoomImg.removeAttribute("src");
+  });
+
   // ===== Init =====
   setMode("kid");
 </script>
 </body>
 </html>
+```
