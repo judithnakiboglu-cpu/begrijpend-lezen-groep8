@@ -757,6 +757,20 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     oneQuestion.innerHTML = "";
     nextBtn.style.display = "none";
 
+    const STICKERS = [
+      { emoji:"🏆", label:"Kampioen" },
+      { emoji:"🦊", label:"Slimme vos" },
+      { emoji:"🚀", label:"Raketsnel" },
+      { emoji:"🦄", label:"Magisch goed" },
+      { emoji:"🦉", label:"Wijze uil" },
+      { emoji:"🌈", label:"Top gedaan!" },
+      { emoji:"🐼", label:"Super!" },
+      { emoji:"🎯", label:"Perfect!" }
+    ];
+
+function pickRandomSticker(){
+  return STICKERS[Math.floor(Math.random()*STICKERS.length)];
+}
     const stickerWon = (wrong <= 1);
     const chosenSticker = stickerWon ? pickRandomSticker() : null;
 
