@@ -349,7 +349,7 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     currentLessonId = lesson.id;
 
     kidTitle.textContent = lesson.title || "—";
-    kidText.textContent = lesson.text || "";
+    kidText.innerHTML = lesson.text || "";
     scoreTotal.textContent = lesson.questions.length;
 
     renderQuestions(lesson);
@@ -363,7 +363,7 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
       box.className = "q";
 
       const title = document.createElement("div");
-      title.innerHTML = `<strong>Vraag ${qi+1}.</strong> ${escapeHtml(q.text || "")}`;
+      title.innerHTML = `<strong>Vraag ${qi+1}.</strong> ${q.text || ""}`;
       box.appendChild(title);
 
       (q.options || []).forEach((opt, oi)=>{
