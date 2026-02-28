@@ -757,7 +757,9 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     oneQuestion.innerHTML = "";
     nextBtn.style.display = "none";
 
-    const sticker = (wrong <= 1);
+    const stickerWon = (wrong <= 1);
+    const chosenSticker = stickerWon ? pickRandomSticker() : null;
+
     endScreen.style.display = "";
     endScreen.innerHTML = `
       <div class="center">
@@ -765,12 +767,24 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         <h2 style="margin-top:10px;">Score: ${correct}/${total}</h2>
         <div class="muted">Fouten: ${wrong}</div>
         <div style="height:12px;"></div>
-        ${sticker ? `<div class="center"><div class="bigSticker" title="Sticker!">⭐</div><div class="muted" style="margin-top:8px;"><strong>Sticker verdiend!</strong> (0 of 1 fout)</div></div>`
-                  : `<div class="muted">Geen sticker deze keer. Probeer opnieuw 💪</div>`}
+
+        ${stickerWon ? `
+          <div class="center">
+            <div class="bigSticker" title="${escapeHtml(chosenSticker.label)}">
+              ${chosenSticker.emoji}
+            </div>
+            <div class="muted" style="margin-top:8px;">
+              <strong>Sticker verdiend!</strong> (${escapeHtml(chosenSticker.label)})
+            </div>
+          </div>
+        ` : `
+          <div class="muted">Geen sticker deze keer. Probeer opnieuw 💪</div>
+        `}
+
         <div style="height:14px;"></div>
         <button class="primary" id="againBtn" type="button">Nog een keer</button>
       </div>
-    `;
+     `;
 
     document.getElementById("againBtn").onclick = ()=>{
       resetQuiz();
