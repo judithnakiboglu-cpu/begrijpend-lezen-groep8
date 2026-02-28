@@ -8,11 +8,11 @@
     :root{ --blue:#2e5bff; --bg:#f6f7fb; --card:#fff; --muted:#5a6079; --border:#e6e8f2; }
     *{ box-sizing:border-box; }
     body{ font-family:system-ui, Arial; margin:0; background:var(--bg); }
-    .wrap{ max-width:1000px; margin:0 auto; padding:16px; }
+    .wrap{ max-width:1040px; margin:0 auto; padding:16px; }
     .card{ background:var(--card); border-radius:16px; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.08); margin-bottom:12px; }
     .topbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-    h1{ font-size:20px; margin:0; }
-    h2{ font-size:20px; margin:8px 0; }
+    h1{ font-size:24px; margin:0; font-weight:900; }
+    h2{ font-size:26px; margin:10px 0 12px; font-weight:900; }
     .muted{ color:var(--muted); }
     .small{ font-size:12px; }
     .tabs{ display:flex; gap:8px; }
@@ -23,39 +23,58 @@
     .ghost{ background:#eef2ff; }
     .danger{ background:#ff3b30; color:white; }
     input, textarea, select{ width:100%; padding:10px; border-radius:12px; border:1px solid #d9dbe7; }
-    textarea{ min-height:110px; }
+    textarea{ min-height:120px; }
     .row{ display:flex; gap:10px; flex-wrap:wrap; }
-    .row > *{ flex:1; min-width:220px; }
+    .row > *{ flex:1; min-width:240px; }
     .pill{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; background:#eef2ff; }
     .q{ padding:12px; border-radius:12px; border:1px solid #eee; margin:10px 0; }
-    .opt{ display:block; padding:8px 10px; border-radius:10px; border:1px solid var(--border); margin:8px 0; cursor:pointer; }
+    .opt{ display:block; padding:10px 12px; border-radius:12px; border:1px solid var(--border); margin:10px 0; cursor:pointer; }
     .opt:hover{ background:#f3f5ff; }
-    .feedback{ margin-top:8px; padding:10px; border-radius:12px; }
+    .opt.disabled{ opacity:.85; cursor:default; }
+    .feedback{ margin-top:10px; padding:12px; border-radius:12px; }
     .good{ background:#e9fbef; border:1px solid #b7ebc7; }
     .bad{ background:#fff0f0; border:1px solid #ffcccc; }
-    .ok{ color:#137333; font-weight:700; }
-    .no{ color:#b00020; font-weight:700; }
+    .ok{ color:#137333; font-weight:900; }
+    .no{ color:#b00020; font-weight:900; }
     .hr{ border:none; border-top:1px solid #eee; margin:14px 0; }
     .listItem{ border:1px solid #eee; border-radius:12px; padding:10px; margin:8px 0; }
     .two{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
     .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#f1f3ff; padding:2px 6px; border-radius:8px; }
 
-    /* ✅ Nice reading formatting */
+    /* Reading text formatting */
     #kidText{
-      max-width: 760px;
+      max-width: 780px;
       margin: 0 auto;
       font-size: 17px;
       line-height: 1.75;
       letter-spacing: 0.1px;
-      color: #111;
+      color:#111;
     }
-    #kidText p{ margin: 0 0 14px 0; }
+    #kidText p{ margin:0 0 14px 0; }
     #kidText .title{
-      font-size: 22px;
-      font-weight: 900;
-      margin: 22px 0 10px 0;
-      letter-spacing: 0.2px;
+      font-size:22px;
+      font-weight:900;
+      margin:22px 0 10px 0;
+      letter-spacing:.2px;
     }
+    .imgWrap{ text-align:center; margin:18px 0; }
+    .imgWrap img{ max-width:100%; max-height:340px; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.15); }
+
+    /* Quiz flow */
+    .progress{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .bigSticker{
+      display:flex; align-items:center; justify-content:center;
+      font-size:44px; line-height:1;
+      padding:14px 16px; border-radius:18px;
+      background:#fff7d6; border:1px solid #ffe28a;
+      width: fit-content;
+    }
+    .center{ text-align:center; }
+    table{ width:100%; border-collapse:collapse; }
+    th, td{ border-bottom:1px solid #eee; padding:10px; text-align:left; font-size:13px; }
+    th{ font-size:12px; color:var(--muted); font-weight:800; }
+    details{ border:1px solid #eee; border-radius:12px; padding:10px; margin:10px 0; }
+    summary{ cursor:pointer; font-weight:800; }
   </style>
 </head>
 
@@ -65,7 +84,7 @@
       <div class="topbar">
         <div>
           <h1>Begrijpend Lezen – Groep 8</h1>
-          <div class="muted small">Leerling oefent ✅❌ — Ouder maakt teksten & vragen</div>
+          <div class="muted small">Leerling oefent ✅❌ — Ouder maakt teksten & vragen — Resultaten worden lokaal opgeslagen.</div>
         </div>
         <div class="tabs">
           <button class="tab active" id="tabKid" type="button">Leerling</button>
@@ -82,12 +101,12 @@
             <div class="pill">Tekst kiezen</div>
             <select id="lessonSelect"></select>
             <div class="muted small" style="margin-top:6px;">
-              Tip: gebruik <span class="kbd">Opnieuw</span> om opnieuw te oefenen.
+              Tip: klik <span class="kbd">Start</span> om te beginnen.
             </div>
           </div>
           <div class="topbar" style="justify-content:flex-end;">
-            <div class="pill">Score: <span id="scoreNow">0</span>/<span id="scoreTotal">0</span></div>
-            <button class="ghost" id="resetAnswers" type="button">Opnieuw</button>
+            <div class="pill">Voortgang: <span id="progNow">0</span>/<span id="progTotal">0</span></div>
+            <button class="ghost" id="restartQuiz" type="button">Opnieuw</button>
           </div>
         </div>
       </div>
@@ -95,14 +114,23 @@
       <div class="card">
         <div class="pill">Tekst</div>
         <h2 id="kidTitle">—</h2>
-        <!-- ✅ Removed pre-wrap inline style -->
         <div id="kidText"></div>
       </div>
 
-      <div class="card">
-        <div class="pill">Vragen</div>
-        <div class="muted small">Klik een antwoord → je krijgt meteen feedback.</div>
-        <div id="questions"></div>
+      <div class="card" id="quizCard">
+        <div class="progress">
+          <div>
+            <div class="pill">Vraag</div>
+            <div class="muted small">Je kunt per vraag maar 1x kiezen.</div>
+          </div>
+          <div class="topbar" style="justify-content:flex-end;">
+            <div class="pill">Score: <span id="scoreNow">0</span>/<span id="scoreTotal">0</span></div>
+            <button class="primary" id="startBtn" type="button">Start</button>
+            <button class="primary" id="nextBtn" type="button" style="display:none;">Volgende</button>
+          </div>
+        </div>
+        <div id="oneQuestion"></div>
+        <div id="endScreen" style="display:none;"></div>
       </div>
     </div>
 
@@ -111,12 +139,11 @@
       <div class="card" id="parentLockCard">
         <div class="pill">Ouder-modus beveiligen (optioneel)</div>
         <div class="muted small" style="margin:8px 0 12px;">
-          Je kunt een pincode instellen zodat je zoon niet per ongeluk dingen wijzigt.
-          Laat leeg als je geen pincode wilt.
+          Stel een pincode in zodat je kind niet per ongeluk teksten/vraagjes wijzigt.
         </div>
         <div class="row">
           <div>
-            <label class="muted small">Pincode (4 cijfers, optioneel)</label>
+            <label class="muted small">Pincode (4–8 cijfers, optioneel)</label>
             <input id="pinSet" inputmode="numeric" placeholder="Bijv. 1234" maxlength="8">
           </div>
           <div>
@@ -134,13 +161,13 @@
       <div class="card" id="parentEditor" style="display:none;">
         <div class="topbar">
           <div>
-            <div class="pill">Lessen (meerdere teksten)</div>
-            <div class="muted small">Maak bv. 10 teksten met elk ~15 vragen.</div>
+            <div class="pill">Teksten & vragen</div>
+            <div class="muted small">Maak meerdere teksten met bv. ~15 vragen per tekst.</div>
           </div>
           <div class="row" style="margin:0;">
             <button class="primary" id="addLesson" type="button">Nieuwe tekst</button>
-            <button class="ghost" id="exportData" type="button">Export (backup)</button>
-            <button class="ghost" id="importData" type="button">Import</button>
+            <button class="ghost" id="exportData" type="button">Export teksten</button>
+            <button class="ghost" id="importData" type="button">Import teksten</button>
           </div>
         </div>
 
@@ -163,11 +190,15 @@
         <div class="row" style="margin-top:8px;">
           <div>
             <label class="muted small">Titel</label>
-            <input id="editTitle" placeholder="Bijv. De storm op zee">
+            <input id="editTitle" placeholder="Bijv. Industriële revolutie">
           </div>
         </div>
-        <label class="muted small">Tekst</label>
-        <textarea id="editText" placeholder="Plak hier de begrijpend-lezen tekst..."></textarea>
+        <label class="muted small">Tekst (tip: kopjes op eigen regel + lege regel erna)</label>
+        <textarea id="editText" placeholder="Plak hier de tekst..."></textarea>
+        <div class="muted small" style="margin-top:6px;">
+          Afbeelding toevoegen (optioneel): zet op een eigen regel:<br>
+          <span class="kbd">[img]https://...jpg[/img]</span>
+        </div>
         <div class="row" style="margin-top:10px;">
           <button class="primary" id="saveLesson" type="button">Opslaan</button>
         </div>
@@ -178,7 +209,7 @@
         <div class="row" style="margin-top:8px;">
           <div>
             <label class="muted small">Vraag</label>
-            <input id="qText" placeholder="Bijv. Waarom ging de boot terug?">
+            <input id="qText" placeholder="Bijv. Wat betekent ‘revolutie’ hier?">
           </div>
         </div>
 
@@ -201,7 +232,7 @@
           </div>
           <div>
             <label class="muted small">Uitleg/feedback (optioneel)</label>
-            <input id="explain" placeholder="Bijv. In alinea 2 staat dat...">
+            <input id="explain" placeholder="Bijv. In alinea 1 staat...">
           </div>
         </div>
 
@@ -212,21 +243,51 @@
         <div class="hr"></div>
 
         <div class="pill">Vragenlijst</div>
-        <div class="muted small">Je kunt vragen verwijderen (handig als je er 15 per tekst maakt).</div>
+        <div class="muted small">Hier kan je vragen verwijderen.</div>
         <div id="questionList"></div>
+
+        <div class="hr"></div>
+
+        <div class="topbar">
+          <div>
+            <div class="pill">Resultaten (overzicht)</div>
+            <div class="muted small">Pogingen: welke tekst, score, datum/tijd + details per vraag.</div>
+          </div>
+          <div class="row" style="margin:0;">
+            <button class="ghost" id="exportHistory" type="button">Export resultaten</button>
+            <button class="danger" id="clearHistory" type="button">Wis resultaten</button>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <label class="muted small">Filter op tekst</label>
+            <select id="historyLessonFilter"></select>
+          </div>
+          <div>
+            <label class="muted small">Laatste pogingen</label>
+            <input id="historyLimit" inputmode="numeric" value="50">
+          </div>
+        </div>
+
+        <div id="historyTableWrap" style="margin-top:10px;"></div>
+        <div id="historyDetailsWrap" style="margin-top:10px;"></div>
+
       </div>
     </div>
   </div>
 
 <script>
-  // ---------------- Storage ----------------
-  const KEY = "bl_multi_lessons_v2";
+  // ===== Storage keys =====
+  const KEY = "bl_multi_lessons_v3";
   const PIN_KEY = "bl_parent_pin_v1";
+  const HISTORY_KEY = "bl_attempt_history_v1";
 
   function cryptoRandomId(){
     return Math.random().toString(16).slice(2) + Date.now().toString(16);
   }
 
+  // ===== Default DB =====
   const defaultDB = {
     lessons: [
       {
@@ -239,7 +300,11 @@ Amin is snel met rekenen, maar praat zacht. Saar praat heel overtuigend, maar mo
 Na vijf minuten heeft Saar meer ijsjes verkocht dan Amin. Amin ziet dat Saar bij elke klant glimlacht en een kort praatje maakt.
 Daarna probeert Amin hetzelfde te doen. Hij praat iets harder en maakt ook een grapje.
 
-Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft iets geleerd dat hij morgen weer kan gebruiken.`,
+Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft iets geleerd dat hij morgen weer kan gebruiken.
+
+Stoommachines
+
+Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna een lege regel.`,
         questions: [
           {
             text: "Waarom verkocht Saar in het begin meer ijsjes?",
@@ -274,12 +339,25 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
       return structuredClone(defaultDB);
     }
   }
-
   function saveDB(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
 
-  // ✅ Safe HTML for formatting
+  function loadHistory(){
+    try{
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if(!raw) return [];
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    }catch{
+      return [];
+    }
+  }
+  function saveHistory(arr){
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
+  }
+
+  // ===== Safe text =====
   function escapeHtml(str){
-    return String(str)
+    return String(str ?? "")
       .replaceAll("&","&amp;")
       .replaceAll("<","&lt;")
       .replaceAll(">","&gt;")
@@ -287,52 +365,65 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
       .replaceAll("'","&#039;");
   }
 
-  // ✅ Convert plain text into nice readable HTML
+  // ===== Pretty reading formatter (plain text -> HTML) =====
   function formatReadingText(txt){
     if(!txt) return "";
     txt = txt.replace(/\r/g, "");
+    txt = txt.replace(/^\s*---\s*$/gm, "\n\n"); // optional separators
 
-    // allow separators like --- (optional)
-    txt = txt.replace(/^\s*---\s*$/gm, "\n\n");
-
-    // split blocks by empty line
     const blocks = txt.split(/\n\s*\n/);
-
     let html = "";
+
     for(const block of blocks){
       const clean = block.trim();
       if(!clean) continue;
 
       const lines = clean.split("\n").map(l=>l.trim()).filter(Boolean);
+      if(lines.length === 0) continue;
+
+      // subtitle detection (single short line without punctuation end)
       const isSingleLine = lines.length === 1;
       const line = lines[0] || "";
-
-      // detect subtitle lines
       const looksLikeTitle =
         isSingleLine &&
         line.length <= 60 &&
-        !line.endsWith(".") &&
-        !line.endsWith(",") &&
-        !line.endsWith(";");
+        !/[.,;:]$/.test(line);
 
       if(looksLikeTitle){
         html += `<div class="title">${escapeHtml(line)}</div>`;
-      }else{
-        // keep single line breaks inside a paragraph
-        const paragraph = lines.map(l=>escapeHtml(l)).join("<br>");
-        html += `<p>${paragraph}</p>`;
+        continue;
       }
+
+      // paragraph with support for [img]...[/img] lines
+      const rendered = lines.map(l=>{
+        if(l.startsWith("[img]") && l.endsWith("[/img]")){
+          const url = l.slice(5, -6).trim();
+          const safeUrl = escapeHtml(url);
+          return `<div class="imgWrap"><img src="${safeUrl}" loading="lazy"></div>`;
+        }
+        return escapeHtml(l);
+      }).join("<br>");
+
+      html += `<p>${rendered}</p>`;
     }
+
     return html;
   }
 
+  // ===== App state =====
   let DB = loadDB();
   let currentLessonId = DB.lessons[0].id;
 
-  let answers = {};
-  let score = 0;
+  // quiz state
+  let quiz = {
+    started: false,
+    qIndex: 0,
+    locked: false,
+    answers: [], // chosen index or null
+    correctCount: 0
+  };
 
-  // ---------------- Tabs ----------------
+  // ===== Tabs =====
   const tabKid = document.getElementById("tabKid");
   const tabParent = document.getElementById("tabParent");
   const kidView = document.getElementById("kidView");
@@ -364,26 +455,67 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
 
   function idxToLetter(i){ return ["A","B","C","D"][i] || "?"; }
 
-  // ---------------- Kid UI ----------------
+  // ===== Kid UI elements =====
   const lessonSelect = document.getElementById("lessonSelect");
   const kidTitle = document.getElementById("kidTitle");
   const kidText = document.getElementById("kidText");
-  const questionsDiv = document.getElementById("questions");
+  const progNow = document.getElementById("progNow");
+  const progTotal = document.getElementById("progTotal");
   const scoreNow = document.getElementById("scoreNow");
   const scoreTotal = document.getElementById("scoreTotal");
+  const startBtn = document.getElementById("startBtn");
+  const nextBtn = document.getElementById("nextBtn");
+  const oneQuestion = document.getElementById("oneQuestion");
+  const endScreen = document.getElementById("endScreen");
 
   lessonSelect.onchange = (e)=>{
     currentLessonId = e.target.value;
-    answers = {};
-    score = 0;
+    resetQuiz(false);
     renderKid();
   };
 
-  document.getElementById("resetAnswers").onclick = ()=>{
-    answers = {};
-    score = 0;
+  document.getElementById("restartQuiz").onclick = ()=>{
+    resetQuiz(true);
     renderKid();
   };
+
+  startBtn.onclick = ()=>{
+    const lesson = getLessonById(currentLessonId);
+    if(lesson.questions.length === 0){
+      alert("Er staan nog geen vragen in deze tekst.");
+      return;
+    }
+    quiz.started = true;
+    quiz.qIndex = 0;
+    quiz.locked = false;
+    quiz.answers = Array(lesson.questions.length).fill(null);
+    quiz.correctCount = 0;
+    renderKid();
+  };
+
+  nextBtn.onclick = ()=>{
+    const lesson = getLessonById(currentLessonId);
+    if(!quiz.started) return;
+
+    if(quiz.qIndex < lesson.questions.length - 1){
+      quiz.qIndex++;
+      quiz.locked = false;
+      renderKid();
+    }else{
+      finishQuiz();
+    }
+  };
+
+  function resetQuiz(confirmIt){
+    if(confirmIt && quiz.started){
+      // optional confirm; keep simple
+    }
+    quiz.started = false;
+    quiz.qIndex = 0;
+    quiz.locked = false;
+    quiz.answers = [];
+    quiz.correctCount = 0;
+  }
 
   function renderLessonDropdown(selectEl){
     selectEl.innerHTML = "";
@@ -402,77 +534,181 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     currentLessonId = lesson.id;
 
     kidTitle.textContent = lesson.title || "—";
-    // ✅ formatted readable text
     kidText.innerHTML = formatReadingText(lesson.text || "");
 
+    progTotal.textContent = lesson.questions.length;
     scoreTotal.textContent = lesson.questions.length;
-    renderQuestions(lesson);
-    recomputeScore(lesson);
+
+    scoreNow.textContent = quiz.correctCount;
+    progNow.textContent = quiz.started ? (lesson.questions.length ? (quiz.qIndex + 1) : 0) : 0;
+
+    // buttons
+    if(!quiz.started){
+      startBtn.style.display = "";
+      nextBtn.style.display = "none";
+      oneQuestion.innerHTML = `<div class="muted">Klik <strong>Start</strong> om te beginnen.</div>`;
+      endScreen.style.display = "none";
+    }else{
+      startBtn.style.display = "none";
+      endScreen.style.display = "none";
+      renderOneQuestion(lesson);
+    }
   }
 
-  function renderQuestions(lesson){
-    questionsDiv.innerHTML = "";
-    lesson.questions.forEach((q, qi)=>{
-      const box = document.createElement("div");
-      box.className = "q";
+  function renderOneQuestion(lesson){
+    const total = lesson.questions.length;
+    if(total === 0){
+      oneQuestion.innerHTML = `<div class="muted">Geen vragen in deze tekst.</div>`;
+      nextBtn.style.display = "none";
+      return;
+    }
 
-      const title = document.createElement("div");
-      title.innerHTML = `<strong>Vraag ${qi+1}.</strong> ${escapeHtml(q.text || "")}`;
-      box.appendChild(title);
+    const q = lesson.questions[quiz.qIndex];
+    oneQuestion.innerHTML = "";
+    const box = document.createElement("div");
+    box.className = "q";
 
-      (q.options || []).forEach((opt, oi)=>{
-        const lab = document.createElement("label");
-        lab.className = "opt";
+    const title = document.createElement("div");
+    title.innerHTML = `<strong>Vraag ${quiz.qIndex+1}.</strong> ${escapeHtml(q.text || "")}`;
+    box.appendChild(title);
 
-        const r = document.createElement("input");
-        r.type = "radio";
-        r.name = "q" + qi;
-        r.value = oi;
-        r.style.marginRight = "8px";
-        if(answers[qi] === oi) r.checked = true;
+    const chosen = quiz.answers[quiz.qIndex];
 
-        r.onchange = ()=>{
-          answers[qi] = oi;
-          showFeedback(box, q, qi);
-          recomputeScore(lesson);
+    (q.options || []).forEach((opt, oi)=>{
+      const lab = document.createElement("label");
+      lab.className = "opt" + (quiz.locked ? " disabled" : "");
+
+      const r = document.createElement("input");
+      r.type = "radio";
+      r.name = "q" + quiz.qIndex;
+      r.value = oi;
+      r.style.marginRight = "10px";
+      r.disabled = quiz.locked;
+      if(chosen === oi) r.checked = true;
+
+      lab.appendChild(r);
+      lab.appendChild(document.createTextNode(opt || ""));
+
+      if(!quiz.locked){
+        lab.onclick = (ev)=>{
+          // allow only ONE selection
+          ev.preventDefault();
+          lockAnswer(lesson, oi);
         };
-
-        lab.appendChild(r);
-        lab.appendChild(document.createTextNode(opt || ""));
-        box.appendChild(lab);
-      });
-
-      const fb = document.createElement("div");
-      fb.id = "fb" + qi;
-      box.appendChild(fb);
-
-      questionsDiv.appendChild(box);
-
-      if(answers[qi] !== undefined) showFeedback(box, q, qi);
+      }
+      box.appendChild(lab);
     });
+
+    const fb = document.createElement("div");
+    fb.id = "fb";
+    box.appendChild(fb);
+
+    oneQuestion.appendChild(box);
+
+    // show feedback if already answered
+    if(chosen !== null && chosen !== undefined){
+      showLockedFeedback(q, chosen);
+      quiz.locked = true;
+      nextBtn.style.display = "";
+      nextBtn.textContent = (quiz.qIndex === total - 1) ? "Resultaat" : "Volgende";
+    }else{
+      nextBtn.style.display = "none";
+    }
   }
 
-  function showFeedback(box, q, qi){
-    const fb = box.querySelector("#fb"+qi);
-    const chosen = answers[qi];
-    const good = chosen === q.correctIndex;
+  function lockAnswer(lesson, chosenIndex){
+    const q = lesson.questions[quiz.qIndex];
+    if(quiz.answers[quiz.qIndex] !== null && quiz.answers[quiz.qIndex] !== undefined) return;
+
+    quiz.answers[quiz.qIndex] = chosenIndex;
+    quiz.locked = true;
+
+    if(chosenIndex === q.correctIndex) quiz.correctCount++;
+
+    scoreNow.textContent = quiz.correctCount;
+
+    showLockedFeedback(q, chosenIndex);
+
+    nextBtn.style.display = "";
+    nextBtn.textContent = (quiz.qIndex === lesson.questions.length - 1) ? "Resultaat" : "Volgende";
+
+    // disable radios after selection
+    const radios = oneQuestion.querySelectorAll('input[type="radio"]');
+    radios.forEach(r => r.disabled = true);
+
+    // remove click handlers look by rerender (simple + safe)
+    setTimeout(()=> renderKid(), 50);
+  }
+
+  function showLockedFeedback(q, chosenIndex){
+    const fb = document.getElementById("fb");
+    const good = chosenIndex === q.correctIndex;
+    const explain = q.explanation ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(q.explanation)}</div>` : "";
 
     fb.className = "feedback " + (good ? "good" : "bad");
-    const explain = q.explanation ? `<div class="muted small" style="margin-top:6px;">${escapeHtml(q.explanation)}</div>` : "";
     fb.innerHTML = good
       ? `<span class="ok">✅ Goed!</span>${explain}`
-      : `<span class="no">❌ Niet helemaal.</span> <span class="muted small">Juiste antwoord: ${idxToLetter(q.correctIndex)}</span>${explain}`;
+      : `<span class="no">❌ Fout.</span> <span class="muted small">Juiste antwoord: ${idxToLetter(q.correctIndex)}</span>${explain}`;
   }
 
-  function recomputeScore(lesson){
-    score = 0;
-    lesson.questions.forEach((q, qi)=>{
-      if(answers[qi] === q.correctIndex) score++;
-    });
-    scoreNow.textContent = score;
+  function finishQuiz(){
+    const lesson = getLessonById(currentLessonId);
+    const total = lesson.questions.length;
+    const correct = quiz.correctCount;
+    const wrong = total - correct;
+
+    // build attempt details
+    const details = lesson.questions.map((q, i)=>({
+      qIndex: i,
+      question: q.text || "",
+      chosenIndex: quiz.answers[i],
+      correctIndex: q.correctIndex,
+      isCorrect: quiz.answers[i] === q.correctIndex
+    }));
+
+    const attempt = {
+      id: cryptoRandomId(),
+      ts: Date.now(),
+      lessonId: lesson.id,
+      lessonTitle: lesson.title || "Zonder titel",
+      total, correct, wrong,
+      details
+    };
+
+    const history = loadHistory();
+    history.unshift(attempt);
+    // keep it reasonable
+    saveHistory(history.slice(0, 500));
+
+    // show end screen
+    oneQuestion.innerHTML = "";
+    nextBtn.style.display = "none";
+
+    const sticker = (wrong <= 1);
+    endScreen.style.display = "";
+    endScreen.innerHTML = `
+      <div class="center">
+        <div class="pill">Resultaat</div>
+        <h2 style="margin-top:10px;">Score: ${correct}/${total}</h2>
+        <div class="muted">Fouten: ${wrong}</div>
+        <div style="height:12px;"></div>
+        ${sticker ? `<div class="center"><div class="bigSticker" title="Sticker!">⭐</div><div class="muted" style="margin-top:8px;"><strong>Sticker verdiend!</strong> (0 of 1 fout)</div></div>`
+                  : `<div class="muted">Geen sticker deze keer. Probeer opnieuw 💪</div>`}
+        <div style="height:14px;"></div>
+        <button class="primary" id="againBtn" type="button">Nog een keer</button>
+      </div>
+    `;
+
+    document.getElementById("againBtn").onclick = ()=>{
+      resetQuiz(false);
+      renderKid();
+    };
+
+    // reset quiz state (but keep lesson selection)
+    resetQuiz(false);
   }
 
-  // ---------------- Parent lock ----------------
+  // ===== Parent lock =====
   const parentLockCard = document.getElementById("parentLockCard");
   const parentEditor = document.getElementById("parentEditor");
   const pinSet = document.getElementById("pinSet");
@@ -511,7 +747,7 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     renderParent();
   };
 
-  // ---------------- Parent editor ----------------
+  // ===== Parent editor =====
   const parentLessonSelect = document.getElementById("parentLessonSelect");
   const editTitle = document.getElementById("editTitle");
   const editText = document.getElementById("editText");
@@ -521,12 +757,28 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     currentLessonId = e.target.value;
     fillEditor();
     renderQuestionList();
+    renderHistory();
+    // keep kid dropdown updated too
+    renderKid();
   };
+
+  function renderLessonDropdown(selectEl){
+    selectEl.innerHTML = "";
+    DB.lessons.forEach(l=>{
+      const opt = document.createElement("option");
+      opt.value = l.id;
+      opt.textContent = l.title;
+      selectEl.appendChild(opt);
+    });
+    selectEl.value = currentLessonId;
+  }
 
   function renderParent(){
     renderLessonDropdown(parentLessonSelect);
     fillEditor();
     renderQuestionList();
+    renderHistoryFilter();
+    renderHistory();
   }
 
   function fillEditor(){
@@ -546,6 +798,7 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     currentLessonId = newLesson.id;
     saveDB();
     renderParent();
+    resetQuiz(false);
     renderKid();
   };
 
@@ -559,7 +812,7 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     currentLessonId = DB.lessons[0].id;
     saveDB();
     renderParent();
-    answers = {}; score = 0;
+    resetQuiz(false);
     renderKid();
   };
 
@@ -593,7 +846,7 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
     document.getElementById("explain").value = "";
 
     renderQuestionList();
-    answers = {}; score = 0;
+    resetQuiz(false);
     renderKid();
   };
 
@@ -633,20 +886,20 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
         lesson.questions.splice(idx, 1);
         saveDB();
         renderQuestionList();
-        answers = {}; score=0;
+        resetQuiz(false);
         renderKid();
       };
     });
   }
 
-  // ---------------- Import/Export ----------------
+  // ===== Import/Export texts =====
   document.getElementById("exportData").onclick = ()=>{
     const dataStr = JSON.stringify(DB, null, 2);
     const blob = new Blob([dataStr], {type:"application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "begrijpend-lezen-backup.json";
+    a.download = "begrijpend-lezen-teksten.json";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -673,16 +926,127 @@ Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft 
         saveDB();
         alert("Import gelukt!");
         renderParent();
-        answers={}; score=0;
+        resetQuiz(false);
         renderKid();
       }catch{
-        alert("Import mislukt: dit bestand is geen geldige backup.");
+        alert("Import mislukt: dit bestand is geen geldige export.");
       }
     };
     inp.click();
   };
 
-  // Init
+  // ===== History UI =====
+  const historyLessonFilter = document.getElementById("historyLessonFilter");
+  const historyLimit = document.getElementById("historyLimit");
+  const historyTableWrap = document.getElementById("historyTableWrap");
+  const historyDetailsWrap = document.getElementById("historyDetailsWrap");
+
+  function renderHistoryFilter(){
+    historyLessonFilter.innerHTML = "";
+    const optAll = document.createElement("option");
+    optAll.value = "";
+    optAll.textContent = "Alle teksten";
+    historyLessonFilter.appendChild(optAll);
+
+    DB.lessons.forEach(l=>{
+      const opt = document.createElement("option");
+      opt.value = l.id;
+      opt.textContent = l.title;
+      historyLessonFilter.appendChild(opt);
+    });
+    historyLessonFilter.value = "";
+  }
+
+  historyLessonFilter.onchange = ()=> renderHistory();
+  historyLimit.onchange = ()=> renderHistory();
+
+  function fmtDate(ts){
+    try{
+      const d = new Date(ts);
+      return d.toLocaleString();
+    }catch{
+      return String(ts);
+    }
+  }
+
+  function renderHistory(){
+    const filterLesson = historyLessonFilter.value || "";
+    const limit = Math.max(1, Math.min(500, Number(historyLimit.value || 50)));
+
+    const history = loadHistory()
+      .filter(a => !filterLesson || a.lessonId === filterLesson)
+      .slice(0, limit);
+
+    if(history.length === 0){
+      historyTableWrap.innerHTML = `<div class="muted">Nog geen resultaten.</div>`;
+      historyDetailsWrap.innerHTML = "";
+      return;
+    }
+
+    historyTableWrap.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Datum/tijd</th>
+            <th>Tekst</th>
+            <th>Score</th>
+            <th>Fouten</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${history.map(a=>`
+            <tr>
+              <td>${escapeHtml(fmtDate(a.ts))}</td>
+              <td>${escapeHtml(a.lessonTitle)}</td>
+              <td><strong>${a.correct}/${a.total}</strong></td>
+              <td>${a.wrong}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+    historyDetailsWrap.innerHTML = history.map(a=>{
+      const sticker = a.wrong <= 1 ? "⭐ sticker" : "—";
+      return `
+        <details>
+          <summary>${escapeHtml(fmtDate(a.ts))} • ${escapeHtml(a.lessonTitle)} • ${a.correct}/${a.total} • ${sticker}</summary>
+          <div class="muted small" style="margin-top:8px;">Details per vraag:</div>
+          <ol style="margin:8px 0 0 18px; padding:0;">
+            ${(a.details || []).map(d=>{
+              const ok = d.isCorrect ? "✅" : "❌";
+              const chosen = (d.chosenIndex === null || d.chosenIndex === undefined) ? "-" : idxToLetter(d.chosenIndex);
+              const corr = idxToLetter(d.correctIndex);
+              return `<li style="margin:8px 0;">
+                ${ok} <strong>${escapeHtml(d.question)}</strong><br>
+                <span class="muted small">Gekozen: ${chosen} • Juiste: ${corr}</span>
+              </li>`;
+            }).join("")}
+          </ol>
+        </details>
+      `;
+    }).join("");
+  }
+
+  document.getElementById("clearHistory").onclick = ()=>{
+    if(!confirm("Weet je zeker dat je alle resultaten wilt wissen?")) return;
+    saveHistory([]);
+    renderHistory();
+  };
+
+  document.getElementById("exportHistory").onclick = ()=>{
+    const history = loadHistory();
+    const dataStr = JSON.stringify(history, null, 2);
+    const blob = new Blob([dataStr], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "begrijpend-lezen-resultaten.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ===== Init =====
   setMode("kid");
 </script>
 </body>
