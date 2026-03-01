@@ -83,9 +83,7 @@
     }
     #kidText li{ margin:6px 0; }
 
-    .sideMedia{
-      display:none;
-    }
+    .sideMedia{ display:none; }
     .sideMedia img{
       width:100%;
       max-height:460px;
@@ -104,7 +102,6 @@
       color:#6b0000;
     }
 
-    /* inline images inside text */
     .imgWrap{ text-align:center; margin:14px 0; }
     .imgWrap img{
       max-width:100%;
@@ -166,7 +163,6 @@
     details{ border:1px solid #eee; border-radius:12px; padding:10px; margin:10px 0; }
     summary{ cursor:pointer; font-weight:800; }
 
-    /* Zoom overlay */
     .zoomOverlay{
       position:fixed; inset:0; background:rgba(0,0,0,.65);
       display:none; align-items:center; justify-content:center;
@@ -409,10 +405,27 @@
   </div>
 
 <script>
-  // ===== Storage keys (same as your previous versions) =====
+  // ===== Storage keys =====
   const KEY = "bl_multi_lessons_v2";
   const PIN_KEY = "bl_parent_pin_v1";
   const HISTORY_KEY = "bl_attempt_history_v1";
+
+  // ===== Helpers =====
+  function deepClone(obj){
+    return JSON.parse(JSON.stringify(obj));
+  }
+  function cryptoRandomId(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+  function escapeHtml(str){
+    return String(str ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function idxToLetter(i){ return ["A","B","C","D"][i] ?? "?"; }
 
   // ===== Stickers =====
   const STICKERS = [
@@ -430,20 +443,6 @@
   function pickRandomSticker(){
     return STICKERS[Math.floor(Math.random() * STICKERS.length)];
   }
-
-  // ===== Utilities =====
-  function cryptoRandomId(){
-    return Math.random().toString(16).slice(2) + Date.now().toString(16);
-  }
-  function escapeHtml(str){
-    return String(str ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
-  }
-  function idxToLetter(i){ return ["A","B","C","D"][i] ?? "?"; }
 
   // ===== Default DB =====
   const defaultDB = {
@@ -465,8 +464,6 @@ Later kwamen bekende spellen:
 - The Legend of Zelda (avontuur en ontdekken)
 - Street Fighter (tegen elkaar vechten)
 - Sonic (snelheid en actie)
-
-[img]https://upload.wikimedia.org/wikipedia/commons/5/5f/Steam_engine_Watt_1788.png[/img]
 
 Kopje voorbeeld
 
@@ -493,9 +490,9 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
   function loadDB(){
     try{
       const raw = localStorage.getItem(KEY);
-      if(!raw) return structuredClone(defaultDB);
+      if(!raw) return deepClone(defaultDB);
       const db = JSON.parse(raw);
-      if(!db || !Array.isArray(db.lessons) || db.lessons.length === 0) return structuredClone(defaultDB);
+      if(!db || !Array.isArray(db.lessons) || db.lessons.length === 0) return deepClone(defaultDB);
       db.lessons.forEach(l=>{
         l.id = l.id || cryptoRandomId();
         l.title = l.title || "Zonder titel";
@@ -506,7 +503,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
       });
       return db;
     }catch{
-      return structuredClone(defaultDB);
+      return deepClone(defaultDB);
     }
   }
   function saveDB(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
@@ -525,7 +522,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
   }
 
-  // ===== Pretty text formatter (supports headings, paragraphs, bullets, [img]URL[/img]) =====
+  // ===== Pretty formatter (headings, paragraphs, bullets, [img]URL[/img]) =====
   function formatReadingText(txt){
     if(!txt) return "";
     txt = txt.replace(/\r/g, "");
@@ -540,7 +537,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
       const lines = clean.split("\n").map(l=>l.trim()).filter(Boolean);
       if(lines.length === 0) continue;
 
-      // If it's an image-only block: [img]...[/img]
+      // image block
       if(lines.length === 1){
         const m = lines[0].match(/^\[img\](.+?)\[\/img\]$/i);
         if(m){
@@ -550,7 +547,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
         }
       }
 
-      // Bullet list block
+      // bullet block
       const isBullet = lines.every(l => /^(\- |\* |• )/.test(l));
       if(isBullet){
         const items = lines.map(l => l.replace(/^(\- |\* |• )/, "").trim()).filter(Boolean);
@@ -558,7 +555,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
         continue;
       }
 
-      // Heading (single line, not ending with punctuation)
+      // heading
       const isSingleLine = (lines.length === 1);
       const line = lines[0] || "";
       const looksLikeTitle =
@@ -571,7 +568,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
         continue;
       }
 
-      // Normal paragraph (also supports inline [img]...[/img] on its own line inside paragraph)
+      // paragraph
       const rendered = lines.map(l=>{
         const m = l.match(/^\[img\](.+?)\[\/img\]$/i);
         if(m){
@@ -725,27 +722,30 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     kidSideMedia.style.display = "";
     textLayout.classList.add("hasImage");
 
-    // show caption if any
     if(cap){
       kidImgCaption.textContent = cap;
       kidImgCaption.style.display = "";
     }
 
-    // load image + handle errors (hotlink blocking)
-    kidImg.onload = ()=>{
-      kidImgWarn.style.display = "none";
-    };
+    kidImg.onload = ()=>{ kidImgWarn.style.display = "none"; };
     kidImg.onerror = ()=>{
       kidImgWarn.style.display = "";
       kidImgWarn.innerHTML =
-        "Deze afbeelding kan niet geladen worden (sommige websites blokkeren 'hotlinking').<br>" +
-        "Tip: gebruik een andere afbeelding-URL, of upload de afbeelding ergens waar hotlinking wel werkt (bijv. Wikipedia / Wikimedia).";
+        "Deze afbeelding kan niet geladen worden (sommige websites blokkeren hotlinking).<br>" +
+        "Tip: gebruik een andere URL (Wikimedia/Wikipedia werkt vaak).";
     };
 
     kidImg.src = url;
   }
 
   function renderKid(){
+    // ensure we always have at least one lesson
+    if(!DB.lessons || DB.lessons.length === 0){
+      DB = deepClone(defaultDB);
+      currentLessonId = DB.lessons[0].id;
+      saveDB();
+    }
+
     renderLessonDropdown(lessonSelect);
     const lesson = getLessonById(currentLessonId);
     currentLessonId = lesson.id;
@@ -847,8 +847,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     nextBtn.style.display = "";
     nextBtn.textContent = (quiz.qIndex === lesson.questions.length - 1) ? "Resultaat" : "Volgende";
 
-    // lock UI
-    setTimeout(()=> renderKid(), 30);
+    setTimeout(()=> renderKid(), 20);
   }
 
   function showLockedFeedback(q, chosenIndex){
@@ -872,7 +871,6 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     const correct = quiz.correctCount;
     const wrong = total - correct;
 
-    // store attempt
     const details = lesson.questions.map((q, i)=>({
       qIndex: i,
       question: q.text || "",
@@ -894,11 +892,10 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     history.unshift(attempt);
     saveHistory(history.slice(0, 500));
 
-    // UI end screen
     oneQuestion.innerHTML = "";
     nextBtn.style.display = "none";
 
-    const stickerWon = (wrong <= 1); // <= 1 fout => sticker
+    const stickerWon = (wrong <= 1);
     const chosenSticker = stickerWon ? pickRandomSticker() : null;
 
     endScreen.style.display = "";
@@ -1183,7 +1180,6 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     });
     historyLessonFilter.value = "";
   }
-
   historyLessonFilter.onchange = ()=> renderHistory();
   historyLimit.onchange = ()=> renderHistory();
 
@@ -1269,10 +1265,9 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     URL.revokeObjectURL(url);
   };
 
-  // ===== Zoom overlay (side image) =====
+  // ===== Zoom overlay =====
   const zoomOverlay = document.getElementById("zoomOverlay");
   const zoomImg = document.getElementById("zoomImg");
-
   kidImg.addEventListener("click", ()=>{
     if(!kidImg.src) return;
     zoomImg.src = kidImg.src;
