@@ -456,24 +456,116 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   // - A block with many lines starting with "- " => bullet list
   // - A single short line (no ending punctuation) => title
   function formatReadingText(txt){
-    if(!txt) return "";
-    txt = txt.replace(/\r/g, "");
+      if(!txt) return "";
+      txt = txt.replace(/\r/g, "");
+      txt = txt.replace(/^\s*---\s*$/gm, "\n\n");
 
-    const blocks = txt.split(/\n\s*\n/);
-    let html = "";
+      // 1) Zet [img]URL[/img] overal om (ook als er spaties voor staan)
+      // We gebruiken een placeholder zodat we daarna veilig kunnen escapen.
+      const images = [];
+      txt = txt.replace(/\[img\]\s*(https?:\/\/[^\s\]]+?)\s*\[\/img\]/gi, (m, url) => {
+        images.push(url);
+        return `[[[IMG_${images.length - 1}]]]`;
+      });
 
-    for(const block of blocks){
-      const clean = block.trim();
-      if(!clean) continue;
+      const blocks = txt.split(/\n\s*\n/);
+      let html = "";
 
-      const lines = clean.split("\n").map(l=>l.trim()).filter(Boolean);
-      if(lines.length === 0) continue;
+      for(const block of blocks){
+        const clean = block.trim();
+        if(!clean) continue;
 
-      const isBullets = lines.length >= 2 && lines.every(l => l.startsWith("- "));
-      if(isBullets){
-        html += "<ul>" + lines.map(l => `<li>${escapeHtml(l.slice(2))}</li>`).join("") + "</ul>";
-        continue;
+        const lines = clean.split("\n").map(l=>l.trim()).filter(Boolean);
+        if(lines.length === 0) continue;
+
+        // Kopje detectie (1 regel, kort, geen punt/komma op het einde)
+        const isSingleLine = lines.length === 1;
+        const line = lines[0] || "";
+        const looksLikeTitle =
+          isSingleLine &&
+          line.length <= 60 &&
+          !/[.,;:]$/.test(line);
+
+        if(looksLikeTitle){
+          html += `<div class="title">${escapeHtml(line)}</div>`;
+          continue;
+        }
+
+        // Regel voor regel renderen, inclusief IMG placeholders
+        const rendered = lines.map(l=>{
+          // IMG placeholders terugzetten naar echte <img>
+          l = l.replace(/\[\[\[IMG_(\d+)\]\]\]/g, (m, idxStr) => {
+            const idx = Number(idxStr);
+            const url = images[idx] || "";
+            const safeUrl = escapeHtml(url);
+
+            // onerror: als host blokkeert, toon een melding in de tekst
+            return `
+              <div class="imgWrap">
+                <img src="${safeUrl}" loading="lazy" alt="Afbeelding"
+                     onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend','<div class=&quot;muted small&quot;>Afbeelding kon niet laden (link geblokkeerd of fout).</div>')">
+              </div>
+            `;
+          });
+
+          return escapeHtml(l);
+        }).join("<br>");
+
+        // Omdat we escapeHtml doen, moeten we IMG-blokken NA escape terugzetten:
+        // Dus: eerst escapen, daarna IMG HTML injecteren via een tweede pass.
+        // Oplossing: we escapen per regel, maar IMG HTML staat al als echte HTML.
+        // Daarom: hierboven escapeHtml pas NA placeholders verwerken.
+        // (Let op: we hebben nu escapeHtml al gedaan, maar IMG is HTML -> die zou nu ge-escaped zijn.)
+        // Dus: we doen het anders: we escapen alleen de niet-IMG delen:
+
       }
+
+  // Beter: opnieuw bouwen zonder dubbele escape:
+  // (simpel en veilig)
+  html = "";
+  for(const block of blocks){
+    const clean = block.trim();
+    if(!clean) continue;
+
+    const lines = clean.split("\n").map(l=>l.trim()).filter(Boolean);
+    if(lines.length === 0) continue;
+
+    const isSingleLine = lines.length === 1;
+    const line = lines[0] || "";
+    const looksLikeTitle =
+      isSingleLine &&
+      line.length <= 60 &&
+      !/[.,;:]$/.test(line);
+
+    if(looksLikeTitle){
+      html += `<div class="title">${escapeHtml(line)}</div>`;
+      continue;
+    }
+
+    const rendered = lines.map(l=>{
+      // placeholders omzetten naar IMG HTML
+      const parts = l.split(/(\[\[\[IMG_\d+\]\]\])/g);
+      return parts.map(part=>{
+        const m = part.match(/^\[\[\[IMG_(\d+)\]\]\]$/);
+        if(m){
+          const url = images[Number(m[1])] || "";
+          const safeUrl = escapeHtml(url);
+          return `
+            <div class="imgWrap">
+              <img src="${safeUrl}" loading="lazy" alt="Afbeelding"
+                   onerror="this.style.display='none'; this.parentElement.insertAdjacentHTML('beforeend','<div class=&quot;muted small&quot;>Afbeelding kon niet laden (link geblokkeerd of fout).</div>')">
+            </div>
+          `;
+        }
+        return escapeHtml(part);
+      }).join("");
+    }).join("<br>");
+
+    html += `<p>${rendered}</p>`;
+  }
+
+  return html;
+}
 
       const isSingleLine = lines.length === 1;
       const line = lines[0] || "";
