@@ -7,16 +7,17 @@
   <style>
     :root{ --blue:#2e5bff; --bg:#f6f7fb; --card:#fff; --muted:#5a6079; --border:#e6e8f2; }
     *{ box-sizing:border-box; }
-    body{ font-family:system-ui, Arial; margin:0; background:var(--bg); }
+    body{ font-family:system-ui, Arial; margin:0; background:var(--bg); color:#111; }
     .wrap{ max-width:1040px; margin:0 auto; padding:16px; }
     .card{ background:var(--card); border-radius:16px; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.08); margin-bottom:12px; }
     .topbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-    h1{ font-size:26px; margin:0; font-weight:900; }
+    h1{ font-size:24px; margin:0; font-weight:900; }
     h2{ font-size:26px; margin:10px 0 12px; font-weight:900; }
     .muted{ color:var(--muted); }
     .small{ font-size:12px; }
     .tabs{ display:flex; gap:8px; }
     button{ border:0; border-radius:12px; padding:10px 12px; cursor:pointer; }
+    button:disabled{ opacity:.6; cursor:not-allowed; }
     .tab{ background:#e9ecf8; }
     .tab.active{ background:var(--blue); color:white; }
     .primary{ background:var(--blue); color:white; }
@@ -28,9 +29,9 @@
     .row > *{ flex:1; min-width:240px; }
     .pill{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; background:#eef2ff; }
     .q{ padding:12px; border-radius:12px; border:1px solid #eee; margin:10px 0; }
-    .opt{ display:block; padding:10px 12px; border-radius:12px; border:1px solid var(--border); margin:10px 0; cursor:pointer; }
+    .opt{ display:block; padding:10px 12px; border-radius:12px; border:1px solid var(--border); margin:10px 0; cursor:pointer; user-select:none; }
     .opt:hover{ background:#f3f5ff; }
-    .opt.disabled{ opacity:.85; cursor:default; }
+    .opt.disabled{ opacity:.92; cursor:default; }
     .feedback{ margin-top:10px; padding:12px; border-radius:12px; }
     .good{ background:#e9fbef; border:1px solid #b7ebc7; }
     .bad{ background:#fff0f0; border:1px solid #ffcccc; }
@@ -43,35 +44,32 @@
 
     /* Reading text formatting */
     #kidText{
-      max-width: none;      /* of gewoon weghalen */
-      width: 100%;
-      margin: 0;            /* geen auto-centering */
-      font-size: 17px;
-      line-height: 1.75;
-      letter-spacing: 0.1px;
+      width:100%;
+      font-size:17px;
+      line-height:1.75;
+      letter-spacing:.1px;
       color:#111;
     }
     #kidText p{ margin:0 0 14px 0; }
     #kidText .title{
       font-size:22px;
       font-weight:900;
-      margin:22px 0 10px 0;
+      margin:18px 0 10px 0;
       letter-spacing:.2px;
     }
-    .imgWrap{ text-align:center; margin:18px 0; }
-    .imgWrap img{ max-width:100%; max-height:340px; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.15); }
+    #kidText ul, #kidText ol{ margin:0 0 14px 22px; padding:0; }
+    #kidText li{ margin:6px 0; }
 
-    /* Text + image side-by-side */
+    /* Layout text + image (ONLY when image exists) */
     .textLayout{
-  display:grid;
-  grid-template-columns: 1fr minmax(0, 320px);
-  gap:16px;
-  align-items:start;
-}
-
-.sideMedia:empty{
-  display:none;
-}
+      display:grid;
+      grid-template-columns: 1fr;  /* default: full width text */
+      gap:16px;
+      align-items:start;
+    }
+    .textLayout.hasImage{
+      grid-template-columns: 1fr 320px; /* only when image exists */
+    }
     .sideMedia img{
       width:100%;
       max-height:420px;
@@ -79,13 +77,16 @@
       border-radius:14px;
       box-shadow:0 6px 18px rgba(0,0,0,.12);
       background:white;
+      cursor:zoom-in;
     }
     @media (max-width: 850px){
-      .textLayout{ grid-template-columns: 1fr; }
+      .textLayout.hasImage{ grid-template-columns: 1fr; }
+      .sideMedia img{ cursor:default; }
     }
 
     /* Quiz flow */
     .progress{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+
     .bigSticker{
       display:flex;
       align-items:center;
@@ -109,12 +110,12 @@
 
     .center{ text-align:center; }
     table{ width:100%; border-collapse:collapse; }
-    th, td{ border-bottom:1px solid #eee; padding:10px; text-align:left; font-size:13px; }
+    th, td{ border-bottom:1px solid #eee; padding:10px; text-align:left; font-size:13px; vertical-align:top; }
     th{ font-size:12px; color:var(--muted); font-weight:800; }
     details{ border:1px solid #eee; border-radius:12px; padding:10px; margin:10px 0; }
     summary{ cursor:pointer; font-weight:800; }
 
-    /* Zoom overlay */
+    /* Image zoom overlay */
     .zoomOverlay{
       position:fixed; inset:0; background:rgba(0,0,0,.65);
       display:none; align-items:center; justify-content:center;
@@ -164,7 +165,7 @@
         <div class="pill">Tekst</div>
         <h2 id="kidTitle">—</h2>
 
-        <div class="textLayout">
+        <div class="textLayout" id="textLayout">
           <div id="kidText"></div>
 
           <div id="kidSideMedia" class="sideMedia" style="display:none;">
@@ -247,12 +248,14 @@
         <div class="row" style="margin-top:8px;">
           <div>
             <label class="muted small">Titel</label>
-            <input id="editTitle" placeholder="Bijv. Industriële revolutie">
+            <input id="editTitle" placeholder="Bijv. De geschiedenis van gamen">
           </div>
         </div>
 
-        <label class="muted small">Tekst (kopjes op eigen regel + lege regel erna)</label>
-        <textarea id="editText" placeholder="Plak hier de tekst..."></textarea>
+        <label class="muted small">Tekst</label>
+        <textarea id="editText" placeholder="Tip:
+- Kopjes: zet een kopje op een eigen regel en laat daarna een lege regel.
+- Bullets: begin regels met '- '"></textarea>
 
         <div class="row" style="margin-top:10px;">
           <div>
@@ -261,13 +264,8 @@
           </div>
           <div>
             <label class="muted small">Bijschrift (optioneel)</label>
-            <input id="editImgCaption" placeholder="Bijv. Stoommachine van James Watt">
+            <input id="editImgCaption" placeholder="Bijv. Een oude arcade-machine">
           </div>
-        </div>
-
-        <div class="muted small" style="margin-top:6px;">
-          In de tekst kan ook een afbeelding op eigen regel:<br>
-          <span class="kbd">[img]https://...jpg[/img]</span>
         </div>
 
         <div class="row" style="margin-top:10px;">
@@ -280,7 +278,7 @@
         <div class="row" style="margin-top:8px;">
           <div>
             <label class="muted small">Vraag</label>
-            <input id="qText" placeholder="Bijv. Wat betekent ‘revolutie’ hier?">
+            <input id="qText" placeholder="Bijv. Waarom werden arcades populair?">
           </div>
         </div>
 
@@ -303,7 +301,7 @@
           </div>
           <div>
             <label class="muted small">Uitleg/feedback (optioneel)</label>
-            <input id="explain" placeholder="Bijv. In alinea 1 staat...">
+            <input id="explain" placeholder="Bijv. In alinea 2 staat...">
           </div>
         </div>
 
@@ -352,12 +350,16 @@
   </div>
 
 <script>
-  // ===== Storage keys =====
-  const KEY = "bl_multi_lessons_v2";          // keep same to preserve existing lessons
+  // ===== Storage keys (KEEP THESE to not lose previous content) =====
+  const KEY = "bl_multi_lessons_v2";
   const PIN_KEY = "bl_parent_pin_v1";
   const HISTORY_KEY = "bl_attempt_history_v1";
 
-  function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+  // structuredClone fallback
+  function clone(obj){
+    if (typeof structuredClone === "function") return structuredClone(obj);
+    return JSON.parse(JSON.stringify(obj));
+  }
 
   function cryptoRandomId(){
     return Math.random().toString(16).slice(2) + Date.now().toString(16);
@@ -373,12 +375,11 @@
 `Saar en Amin doen mee aan een ijsjeswedstrijd. Ze moeten in tien minuten zoveel mogelijk ijsjes verkopen.
 Amin is snel met rekenen, maar praat zacht. Saar praat heel overtuigend, maar moet soms langer nadenken over geld teruggeven.
 
-Na vijf minuten heeft Saar meer ijsjes verkocht dan Amin. Amin ziet dat Saar bij elke klant glimlacht en een kort praatje maakt.
-Daarna probeert Amin hetzelfde te doen. Hij praat iets harder en maakt ook een grapje.
+Later kwamen:
+- Een extra klant
+- Nog een grappig moment
 
-Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft iets geleerd dat hij morgen weer kan gebruiken.
-
-Stoommachines
+Kopje voorbeeld
 
 Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna een lege regel.`,
         imageUrl: "",
@@ -393,7 +394,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
               "Omdat Amin niet wilde verkopen"
             ],
             correctIndex: 1,
-            explanation: "In alinea 2 staat dat Saar glimlacht en een praatje maakt; dat helpt bij verkopen."
+            explanation: "In de tekst staat dat Saar glimlacht en een praatje maakt."
           }
         ]
       }
@@ -403,9 +404,9 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   function loadDB(){
     try{
       const raw = localStorage.getItem(KEY);
-      if(!raw) return deepClone(defaultDB);
+      if(!raw) return clone(defaultDB);
       const db = JSON.parse(raw);
-      if(!db || !Array.isArray(db.lessons) || db.lessons.length===0) return deepClone(defaultDB);
+      if(!db || !Array.isArray(db.lessons) || db.lessons.length===0) return clone(defaultDB);
       db.lessons.forEach(l=>{
         l.id = l.id || cryptoRandomId();
         l.title = l.title || "Zonder titel";
@@ -415,9 +416,9 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         l.questions = Array.isArray(l.questions) ? l.questions : [];
       });
       return db;
-    }catch{
-      // if storage is corrupted, fall back
-      return deepClone(defaultDB);
+    }catch(e){
+      console.error("loadDB error", e);
+      return clone(defaultDB);
     }
   }
   function saveDB(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
@@ -436,6 +437,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
   }
 
+  // ===== Safe text =====
   function escapeHtml(str){
     return String(str ?? "")
       .replaceAll("&","&amp;")
@@ -445,10 +447,14 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       .replaceAll("'","&#039;");
   }
 
+  // ===== Pretty reading formatter (plain text -> HTML) =====
+  // Rules:
+  // - Blocks separated by empty line => paragraphs or titles/lists
+  // - A block with many lines starting with "- " => bullet list
+  // - A single short line (no ending punctuation) => title
   function formatReadingText(txt){
     if(!txt) return "";
     txt = txt.replace(/\r/g, "");
-    txt = txt.replace(/^\s*---\s*$/gm, "\n\n");
 
     const blocks = txt.split(/\n\s*\n/);
     let html = "";
@@ -460,33 +466,33 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       const lines = clean.split("\n").map(l=>l.trim()).filter(Boolean);
       if(lines.length === 0) continue;
 
+      const isBullets = lines.length >= 2 && lines.every(l => l.startsWith("- "));
+      if(isBullets){
+        html += "<ul>" + lines.map(l => `<li>${escapeHtml(l.slice(2))}</li>`).join("") + "</ul>";
+        continue;
+      }
+
       const isSingleLine = lines.length === 1;
       const line = lines[0] || "";
       const looksLikeTitle =
         isSingleLine &&
-        line.length <= 60 &&
-        !/[.,;:]$/.test(line);
+        line.length <= 70 &&
+        !/[.!?;:]$/.test(line);
 
       if(looksLikeTitle){
         html += `<div class="title">${escapeHtml(line)}</div>`;
         continue;
       }
 
-      const rendered = lines.map(l=>{
-        if(l.startsWith("[img]") && l.endsWith("[/img]")){
-          const url = l.slice(5, -6).trim();
-          const safeUrl = escapeHtml(url);
-          return `<div class="imgWrap"><img src="${safeUrl}" loading="lazy" alt="Afbeelding"></div>`;
-        }
-        return escapeHtml(l);
-      }).join("<br>");
-
+      // normal paragraph (keep line breaks)
+      const rendered = lines.map(l => escapeHtml(l)).join("<br>");
       html += `<p>${rendered}</p>`;
     }
+
     return html;
   }
 
-  // ===== Stickers (never same twice) =====
+  // ===== Stickers (random each time) =====
   const STICKERS = [
     { emoji:"🏆", label:"Kampioen" },
     { emoji:"🦊", label:"Slimme vos" },
@@ -495,27 +501,26 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     { emoji:"🦉", label:"Wijze uil" },
     { emoji:"🌈", label:"Top gedaan!" },
     { emoji:"🐼", label:"Super!" },
-    { emoji:"🎯", label:"Perfect!" }
+    { emoji:"🎯", label:"Perfect!" },
+    { emoji:"⭐", label:"Ster!" },
+    { emoji:"🥳", label:"Feest!" }
   ];
-  let _lastStickerEmoji = "";
   function pickRandomSticker(){
-    if(STICKERS.length === 0) return { emoji:"⭐", label:"Sticker" };
-    if(STICKERS.length === 1) return STICKERS[0];
-
-    let s;
-    do {
-      s = STICKERS[Math.floor(Math.random() * STICKERS.length)];
-    } while (s.emoji === _lastStickerEmoji);
-
-    _lastStickerEmoji = s.emoji;
-    return s;
+    return STICKERS[Math.floor(Math.random() * STICKERS.length)];
   }
 
   // ===== App state =====
   let DB = loadDB();
-  let currentLessonId = (DB.lessons[0] && DB.lessons[0].id) ? DB.lessons[0].id : cryptoRandomId();
+  let currentLessonId = DB.lessons[0]?.id || cryptoRandomId();
 
-  let quiz = { started:false, qIndex:0, locked:false, answers:[], correctCount:0 };
+  // quiz state
+  let quiz = {
+    started: false,
+    qIndex: 0,
+    locked: false,
+    answers: [],
+    correctCount: 0
+  };
 
   // ===== Tabs =====
   const tabKid = document.getElementById("tabKid");
@@ -552,10 +557,13 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   const lessonSelect = document.getElementById("lessonSelect");
   const kidTitle = document.getElementById("kidTitle");
   const kidText = document.getElementById("kidText");
+  const textLayout = document.getElementById("textLayout");
+
   const progNow = document.getElementById("progNow");
   const progTotal = document.getElementById("progTotal");
   const scoreNow = document.getElementById("scoreNow");
   const scoreTotal = document.getElementById("scoreTotal");
+
   const startBtn = document.getElementById("startBtn");
   const nextBtn = document.getElementById("nextBtn");
   const oneQuestion = document.getElementById("oneQuestion");
@@ -565,11 +573,31 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   const kidImg = document.getElementById("kidImg");
   const kidImgCaption = document.getElementById("kidImgCaption");
 
+  function renderLessonDropdown(selectEl){
+    selectEl.innerHTML = "";
+    DB.lessons.forEach(l=>{
+      const opt = document.createElement("option");
+      opt.value = l.id;
+      opt.textContent = l.title;
+      selectEl.appendChild(opt);
+    });
+    selectEl.value = currentLessonId;
+  }
+
+  function resetQuiz(){
+    quiz.started = false;
+    quiz.qIndex = 0;
+    quiz.locked = false;
+    quiz.answers = [];
+    quiz.correctCount = 0;
+  }
+
   lessonSelect.onchange = (e)=>{
     currentLessonId = e.target.value;
     resetQuiz();
     renderKid();
   };
+
   document.getElementById("restartQuiz").onclick = ()=>{
     resetQuiz();
     renderKid();
@@ -602,25 +630,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     }
   };
 
-  function resetQuiz(){
-    quiz.started = false;
-    quiz.qIndex = 0;
-    quiz.locked = false;
-    quiz.answers = [];
-    quiz.correctCount = 0;
-  }
-
-  function renderLessonDropdown(selectEl){
-    selectEl.innerHTML = "";
-    DB.lessons.forEach(l=>{
-      const opt = document.createElement("option");
-      opt.value = l.id;
-      opt.textContent = l.title;
-      selectEl.appendChild(opt);
-    });
-    selectEl.value = currentLessonId;
-  }
-
   function setSideImage(lesson){
     const url = (lesson.imageUrl || "").trim();
     const cap = (lesson.imageCaption || "").trim();
@@ -628,6 +637,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     if(url){
       kidImg.src = url;
       kidSideMedia.style.display = "";
+      textLayout.classList.add("hasImage");
+
       if(cap){
         kidImgCaption.textContent = cap;
         kidImgCaption.style.display = "";
@@ -638,12 +649,15 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       kidSideMedia.style.display = "none";
       kidImg.removeAttribute("src");
       kidImgCaption.style.display = "none";
+      textLayout.classList.remove("hasImage");
     }
   }
 
   function renderKid(){
+    // If DB somehow got empty, restore default
     if(!DB.lessons || DB.lessons.length === 0){
-      DB = deepClone(defaultDB);
+      DB = clone(defaultDB);
+      currentLessonId = DB.lessons[0].id;
       saveDB();
     }
 
@@ -657,8 +671,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
     progTotal.textContent = lesson.questions.length;
     scoreTotal.textContent = lesson.questions.length;
-    scoreNow.textContent = quiz.correctCount;
 
+    scoreNow.textContent = quiz.correctCount;
     progNow.textContent = quiz.started ? (lesson.questions.length ? (quiz.qIndex + 1) : 0) : 0;
 
     if(!quiz.started){
@@ -683,6 +697,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
     const q = lesson.questions[quiz.qIndex];
     oneQuestion.innerHTML = "";
+
     const box = document.createElement("div");
     box.className = "q";
 
@@ -747,12 +762,13 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     nextBtn.style.display = "";
     nextBtn.textContent = (quiz.qIndex === lesson.questions.length - 1) ? "Resultaat" : "Volgende";
 
-    // lock UI
+    // lock UI (re-render)
     setTimeout(()=> renderKid(), 30);
   }
 
   function showLockedFeedback(q, chosenIndex){
     const fb = document.getElementById("fb");
+    if(!fb) return;
     const good = chosenIndex === q.correctIndex;
     const explain = q.explanation ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(q.explanation)}</div>` : "";
 
@@ -776,6 +792,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       isCorrect: quiz.answers[i] === q.correctIndex
     }));
 
+    // save attempt
     const attempt = {
       id: cryptoRandomId(),
       ts: Date.now(),
@@ -784,7 +801,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       total, correct, wrong,
       details
     };
-
     const history = loadHistory();
     history.unshift(attempt);
     saveHistory(history.slice(0, 500));
@@ -809,11 +825,13 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
               ${chosenSticker.emoji}
             </div>
             <div class="muted" style="margin-top:8px;">
-              <strong>Sticker verdiend!</strong> (${escapeHtml(chosenSticker.label)})
+              <strong>Sticker verdiend!</strong> (${escapeHtml(chosenSticker.label)})<br>
+              <span class="small muted">(Sticker bij 0 of 1 fout)</span>
             </div>
           </div>
         ` : `
           <div class="muted">Geen sticker deze keer. Probeer opnieuw 💪</div>
+          <div class="small muted">(Sticker bij 0 of 1 fout)</div>
         `}
 
         <div style="height:14px;"></div>
@@ -826,7 +844,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       renderKid();
     };
 
+    // reset for next run (but keep end screen visible)
     resetQuiz();
+    scoreNow.textContent = "0";
+    progNow.textContent = "0";
   }
 
   // ===== Parent lock =====
@@ -880,7 +901,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     currentLessonId = e.target.value;
     fillEditor();
     renderQuestionList();
+    renderHistoryFilter();
     renderHistory();
+    renderLessonDropdown(lessonSelect);
+    resetQuiz();
     renderKid();
   };
 
@@ -939,8 +963,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     lesson.imageUrl = (editImgUrl.value || "").trim();
     lesson.imageCaption = (editImgCaption.value || "").trim();
     saveDB();
+
     renderLessonDropdown(parentLessonSelect);
     renderLessonDropdown(lessonSelect);
+    resetQuiz();
     renderKid();
     alert("Opgeslagen!");
   };
@@ -1027,7 +1053,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     inp.type = "file";
     inp.accept = "application/json";
     inp.onchange = async ()=>{
-      const file = inp.files && inp.files[0];
+      const file = inp.files?.[0];
       if(!file) return;
       const txt = await file.text();
       try{
@@ -1124,10 +1150,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     `;
 
     historyDetailsWrap.innerHTML = history.map(a=>{
-      const sticker = a.wrong <= 1 ? "⭐ sticker" : "—";
+      const stickerTxt = a.wrong <= 1 ? "⭐ sticker" : "—";
       return `
         <details>
-          <summary>${escapeHtml(fmtDate(a.ts))} • ${escapeHtml(a.lessonTitle)} • ${a.correct}/${a.total} • ${sticker}</summary>
+          <summary>${escapeHtml(fmtDate(a.ts))} • ${escapeHtml(a.lessonTitle)} • ${a.correct}/${a.total} • ${stickerTxt}</summary>
           <div class="muted small" style="margin-top:8px;">Details per vraag:</div>
           <ol style="margin:8px 0 0 18px; padding:0;">
             ${(a.details || []).map(d=>{
@@ -1166,9 +1192,9 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   // ===== Image zoom overlay =====
   const zoomOverlay = document.getElementById("zoomOverlay");
   const zoomImg = document.getElementById("zoomImg");
-
   kidImg.addEventListener("click", ()=>{
     if(!kidImg.src) return;
+    if(window.matchMedia("(max-width: 850px)").matches) return;
     zoomImg.src = kidImg.src;
     zoomOverlay.style.display = "flex";
   });
@@ -1178,6 +1204,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   });
 
   // ===== Init =====
+  renderLessonDropdown(lessonSelect);
   setMode("kid");
 </script>
 </body>
