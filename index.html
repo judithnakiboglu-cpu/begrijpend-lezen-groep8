@@ -4,71 +4,51 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Begrijpend Lezen – Groep 8</title>
-
   <style>
-    :root{
-      --blue:#2e5bff;
-      --bg:#f6f7fb;
-      --card:#fff;
-      --muted:#5a6079;
-      --border:#e6e8f2;
-    }
+    :root{ --blue:#2e5bff; --bg:#f6f7fb; --card:#fff; --muted:#5a6079; --border:#e6e8f2; }
     *{ box-sizing:border-box; }
-    body{ font-family:system-ui, -apple-system, Segoe UI, Arial; margin:0; background:var(--bg); color:#111; }
-    .wrap{ max-width:1100px; margin:0 auto; padding:16px; }
-    .card{ background:var(--card); border-radius:18px; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.08); margin-bottom:12px; }
+    body{ font-family:system-ui, Arial; margin:0; background:var(--bg); }
+    .wrap{ max-width:1040px; margin:0 auto; padding:16px; }
+    .card{ background:var(--card); border-radius:16px; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.08); margin-bottom:12px; }
     .topbar{ display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-    h1{ font-size:26px; margin:0; font-weight:900; letter-spacing:.2px; }
-    h2{ font-size:28px; margin:10px 0 12px; font-weight:900; letter-spacing:.2px; }
+    h1{ font-size:24px; margin:0; font-weight:900; }
+    h2{ font-size:26px; margin:10px 0 12px; font-weight:900; }
     .muted{ color:var(--muted); }
     .small{ font-size:12px; }
     .tabs{ display:flex; gap:8px; }
-    button{ border:0; border-radius:12px; padding:10px 12px; cursor:pointer; font-weight:700; }
+    button{ border:0; border-radius:12px; padding:10px 12px; cursor:pointer; }
+    button:disabled{ opacity:.5; cursor:not-allowed; }
     .tab{ background:#e9ecf8; }
     .tab.active{ background:var(--blue); color:white; }
     .primary{ background:var(--blue); color:white; }
     .ghost{ background:#eef2ff; }
     .danger{ background:#ff3b30; color:white; }
-    input, textarea, select{
-      width:100%;
-      padding:10px;
-      border-radius:12px;
-      border:1px solid #d9dbe7;
-      font-size:14px;
-    }
-    textarea{ min-height:130px; }
+    input, textarea, select{ width:100%; padding:10px; border-radius:12px; border:1px solid #d9dbe7; }
+    textarea{ min-height:120px; }
     .row{ display:flex; gap:10px; flex-wrap:wrap; }
     .row > *{ flex:1; min-width:240px; }
-    .pill{
-      display:inline-block;
-      padding:4px 10px;
-      border-radius:999px;
-      font-size:12px;
-      background:#eef2ff;
-      margin-bottom:6px;
-    }
+    .pill{ display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; background:#eef2ff; }
+    .q{ padding:12px; border-radius:12px; border:1px solid #eee; margin:10px 0; }
+    .opt{ display:block; padding:10px 12px; border-radius:12px; border:1px solid var(--border); margin:10px 0; cursor:pointer; }
+    .opt:hover{ background:#f3f5ff; }
+    .opt.disabled{ opacity:.9; cursor:default; }
+    .feedback{ margin-top:10px; padding:12px; border-radius:12px; }
+    .good{ background:#e9fbef; border:1px solid #b7ebc7; }
+    .bad{ background:#fff0f0; border:1px solid #ffcccc; }
+    .ok{ color:#137333; font-weight:900; }
+    .no{ color:#b00020; font-weight:900; }
     .hr{ border:none; border-top:1px solid #eee; margin:14px 0; }
+    .listItem{ border:1px solid #eee; border-radius:12px; padding:10px; margin:8px 0; }
+    .two{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#f1f3ff; padding:2px 6px; border-radius:8px; }
 
-    /* ==== Reading layout ==== */
-    .textLayout{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:16px;
-      align-items:start;
-    }
-    .textLayout.hasImage{
-      grid-template-columns: 1fr 340px;
-    }
-    @media (max-width: 900px){
-      .textLayout.hasImage{ grid-template-columns: 1fr; }
-    }
-
-    /* Pretty reading text */
+    /* Reading text formatting */
     #kidText{
-      width:100%;
-      font-size:17px;
-      line-height:1.8;
-      letter-spacing:.1px;
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.75;
+      letter-spacing: 0.1px;
+      color:#111;
     }
     #kidText p{ margin:0 0 14px 0; }
     #kidText .title{
@@ -77,69 +57,36 @@
       margin:18px 0 10px 0;
       letter-spacing:.2px;
     }
-    #kidText ul{
-      margin:0 0 14px 22px;
-      padding:0;
-    }
+    #kidText ul, #kidText ol{ margin:0 0 14px 22px; padding:0; }
     #kidText li{ margin:6px 0; }
+    .imgWrap{ text-align:center; margin:18px 0; }
+    .imgWrap img{ max-width:100%; max-height:360px; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.15); }
 
-    .sideMedia{ display:none; }
+    /* Text + image side-by-side */
+    .textLayout{
+      display:grid;
+      grid-template-columns: 1fr 320px;
+      gap:16px;
+      align-items:start;
+    }
     .sideMedia img{
       width:100%;
-      max-height:460px;
+      max-height:420px;
       object-fit:contain;
       border-radius:14px;
       box-shadow:0 6px 18px rgba(0,0,0,.12);
       background:white;
     }
-    .imgWarn{
-      margin-top:8px;
-      padding:10px;
-      border-radius:12px;
-      background:#fff0f0;
-      border:1px solid #ffcccc;
-      font-size:12px;
-      color:#6b0000;
+    @media (max-width: 850px){
+      .textLayout{ grid-template-columns: 1fr; }
     }
 
-    .imgWrap{ text-align:center; margin:14px 0; }
-    .imgWrap img{
-      max-width:100%;
-      max-height:360px;
-      border-radius:14px;
-      box-shadow:0 6px 18px rgba(0,0,0,.12);
-      background:white;
-    }
-
-    /* ==== Quiz ==== */
+    /* Quiz flow */
     .progress{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-    .q{ padding:12px; border-radius:14px; border:1px solid #eee; margin-top:10px; }
-    .opt{
-      display:block;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--border);
-      margin:10px 0;
-      cursor:pointer;
-      user-select:none;
-    }
-    .opt:hover{ background:#f3f5ff; }
-    .opt.disabled{ opacity:.9; cursor:default; }
-    .feedback{ margin-top:10px; padding:12px; border-radius:12px; }
-    .good{ background:#e9fbef; border:1px solid #b7ebc7; }
-    .bad{ background:#fff0f0; border:1px solid #ffcccc; }
-    .ok{ color:#137333; font-weight:900; }
-    .no{ color:#b00020; font-weight:900; }
-
-    .center{ text-align:center; }
     .bigSticker{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:120px;
-      line-height:1;
-      padding:20px 24px;
-      border-radius:22px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:120px; line-height:1;
+      padding:20px 24px; border-radius:22px;
       background:linear-gradient(145deg,#fff8d6,#ffeaa0);
       border:2px solid #f6c945;
       width:fit-content;
@@ -152,28 +99,24 @@
       60%{ transform:scale(1.15) rotate(6deg); opacity:1; }
       100%{ transform:scale(1); }
     }
-
-    /* Parent list */
-    .listItem{ border:1px solid #eee; border-radius:12px; padding:10px; margin:8px 0; }
-    .two{ display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; }
-
+    .center{ text-align:center; }
     table{ width:100%; border-collapse:collapse; }
     th, td{ border-bottom:1px solid #eee; padding:10px; text-align:left; font-size:13px; }
     th{ font-size:12px; color:var(--muted); font-weight:800; }
     details{ border:1px solid #eee; border-radius:12px; padding:10px; margin:10px 0; }
     summary{ cursor:pointer; font-weight:800; }
 
+    /* Optional: click image to zoom */
     .zoomOverlay{
       position:fixed; inset:0; background:rgba(0,0,0,.65);
       display:none; align-items:center; justify-content:center;
       padding:18px; z-index:9999;
     }
-    .zoomOverlay img{
-      max-width:100%; max-height:100%;
-      border-radius:14px; background:white;
-    }
+    .zoomOverlay img{ max-width:100%; max-height:100%; border-radius:14px; background:white; }
 
-    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:#f1f3ff; padding:2px 6px; border-radius:8px; }
+    /* Parent question editor tweaks */
+    #qText{ min-height:90px; }
+    .tag{ display:inline-block; padding:2px 8px; border-radius:999px; background:#f1f3ff; font-size:12px; }
   </style>
 </head>
 
@@ -214,13 +157,12 @@
         <div class="pill">Tekst</div>
         <h2 id="kidTitle">—</h2>
 
-        <div id="textLayout" class="textLayout">
+        <div class="textLayout">
           <div id="kidText"></div>
 
-          <div id="kidSideMedia" class="sideMedia">
-            <img id="kidImg" alt="Afbeelding" loading="lazy" title="Klik om te vergroten">
+          <div id="kidSideMedia" class="sideMedia" style="display:none;">
+            <img id="kidImg" alt="Afbeelding" loading="lazy">
             <div id="kidImgCaption" class="muted small" style="margin-top:6px; display:none;"></div>
-            <div id="kidImgWarn" class="imgWarn" style="display:none;"></div>
           </div>
         </div>
       </div>
@@ -229,15 +171,15 @@
         <div class="progress">
           <div>
             <div class="pill">Vraag</div>
-            <div class="muted small">Je kunt per vraag maar 1x kiezen (daarna staat het vast).</div>
+            <div class="muted small" id="kidHint">Je kunt per vraag maar 1x kiezen.</div>
           </div>
           <div class="topbar" style="justify-content:flex-end;">
             <div class="pill">Score: <span id="scoreNow">0</span>/<span id="scoreTotal">0</span></div>
             <button class="primary" id="startBtn" type="button">Start</button>
+            <button class="primary" id="submitBtn" type="button" style="display:none;">Controleer</button>
             <button class="primary" id="nextBtn" type="button" style="display:none;">Volgende</button>
           </div>
         </div>
-
         <div id="oneQuestion"></div>
         <div id="endScreen" style="display:none;"></div>
       </div>
@@ -271,7 +213,7 @@
         <div class="topbar">
           <div>
             <div class="pill">Teksten & vragen</div>
-            <div class="muted small">Maak meerdere teksten met bv. ~15 vragen per tekst.</div>
+            <div class="muted small">Meerkeuze (1 goed) én Multiple choice (meerdere goede).</div>
           </div>
           <div class="row" style="margin:0;">
             <button class="primary" id="addLesson" type="button">Nieuwe tekst</button>
@@ -308,7 +250,7 @@
 
         <div class="row" style="margin-top:10px;">
           <div>
-            <label class="muted small">Afbeelding URL (optioneel) – direct .jpg/.png</label>
+            <label class="muted small">Afbeelding URL (optioneel)</label>
             <input id="editImgUrl" placeholder="https://...jpg / .png">
           </div>
           <div>
@@ -318,8 +260,11 @@
         </div>
 
         <div class="muted small" style="margin-top:6px;">
-          (Extra optie) Afbeelding in de tekst op een eigen regel:<br>
-          <span class="kbd">[img]https://...jpg[/img]</span>
+          In de tekst kan ook een afbeelding op eigen regel:<br>
+          <span class="kbd">[img]https://...jpg[/img]</span><br>
+          En een lijst (bullet points) zo:<br>
+          <span class="kbd">- Zelda (avontuur)</span><br>
+          <span class="kbd">- Street Fighter (vechten)</span>
         </div>
 
         <div class="row" style="margin-top:10px;">
@@ -328,11 +273,29 @@
 
         <div class="hr"></div>
 
-        <div class="pill">Vraag toevoegen (meerkeuze)</div>
+        <div class="pill">Vraag toevoegen / bewerken</div>
+
         <div class="row" style="margin-top:8px;">
           <div>
-            <label class="muted small">Vraag</label>
-            <input id="qText" placeholder="Bijv. Wat betekent ‘revolutie’ hier?">
+            <label class="muted small">Type vraag</label>
+            <select id="qType">
+              <option value="single">Meerkeuze (1 goed antwoord)</option>
+              <option value="multi">Multiple choice (meerdere goede antwoorden)</option>
+            </select>
+          </div>
+          <div>
+            <label class="muted small">Tip</label>
+            <div class="muted small" style="padding:10px 12px; border:1px solid #eee; border-radius:12px;">
+              <span class="tag">single</span> leerling kiest 1 optie (direct lock) •
+              <span class="tag">multi</span> leerling kiest meerdere (dan “Controleer”)
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label class="muted small">Vraag (mag meerdere regels)</label>
+            <textarea id="qText" placeholder="Bijv. Noem 2 dingen die door de stoommachine mogelijk werden."></textarea>
           </div>
         </div>
 
@@ -345,28 +308,45 @@
           <div><label class="muted small">D</label><input id="a3" placeholder="Antwoord D"></div>
         </div>
 
-        <div class="row">
+        <div class="row" id="singleCorrectRow">
           <div>
-            <label class="muted small">Juiste antwoord</label>
-            <select id="correct">
+            <label class="muted small">Juiste antwoord (single)</label>
+            <select id="correctSingle">
               <option value="0">A</option><option value="1">B</option>
               <option value="2">C</option><option value="3">D</option>
             </select>
           </div>
           <div>
             <label class="muted small">Uitleg/feedback (optioneel)</label>
-            <input id="explain" placeholder="Bijv. In alinea 1 staat...">
+            <input id="explain" placeholder="Bijv. In alinea 2 staat...">
+          </div>
+        </div>
+
+        <div class="row" id="multiCorrectRow" style="display:none;">
+          <div>
+            <label class="muted small">Juiste antwoorden (multi)</label>
+            <div class="row" style="gap:8px; margin-top:6px;">
+              <label class="pill" style="cursor:pointer;"><input type="checkbox" id="m0" style="margin-right:6px;">A</label>
+              <label class="pill" style="cursor:pointer;"><input type="checkbox" id="m1" style="margin-right:6px;">B</label>
+              <label class="pill" style="cursor:pointer;"><input type="checkbox" id="m2" style="margin-right:6px;">C</label>
+              <label class="pill" style="cursor:pointer;"><input type="checkbox" id="m3" style="margin-right:6px;">D</label>
+            </div>
+          </div>
+          <div>
+            <label class="muted small">Uitleg/feedback (optioneel)</label>
+            <input id="explain2" placeholder="Bijv. In alinea 3 staat...">
           </div>
         </div>
 
         <div class="row" style="margin-top:10px;">
           <button class="primary" id="addQuestion" type="button">Vraag toevoegen</button>
+          <button class="ghost" id="cancelEdit" type="button" style="display:none;">Annuleer bewerken</button>
         </div>
 
         <div class="hr"></div>
 
         <div class="pill">Vragenlijst</div>
-        <div class="muted small">Hier kan je vragen verwijderen.</div>
+        <div class="muted small">Bewerk • Verwijder • Omhoog/omlaag (volgorde).</div>
         <div id="questionList"></div>
 
         <div class="hr"></div>
@@ -395,7 +375,6 @@
 
         <div id="historyTableWrap" style="margin-top:10px;"></div>
         <div id="historyDetailsWrap" style="margin-top:10px;"></div>
-
       </div>
     </div>
   </div>
@@ -405,17 +384,18 @@
   </div>
 
 <script>
-  // ===== Storage keys =====
+  // ===== Storage keys (KEEP THESE to not lose existing content) =====
   const KEY = "bl_multi_lessons_v2";
   const PIN_KEY = "bl_parent_pin_v1";
   const HISTORY_KEY = "bl_attempt_history_v1";
 
   // ===== Helpers =====
-  function deepClone(obj){
-    return JSON.parse(JSON.stringify(obj));
-  }
   function cryptoRandomId(){
     return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+  function clone(obj){
+    // structuredClone fallback (important for older browsers)
+    try{ return structuredClone(obj); } catch { return JSON.parse(JSON.stringify(obj)); }
   }
   function escapeHtml(str){
     return String(str ?? "")
@@ -426,22 +406,15 @@
       .replaceAll("'","&#039;");
   }
   function idxToLetter(i){ return ["A","B","C","D"][i] ?? "?"; }
-
-  // ===== Stickers =====
-  const STICKERS = [
-    { emoji:"🏆", label:"Kampioen" },
-    { emoji:"🦊", label:"Slimme vos" },
-    { emoji:"🚀", label:"Raketsnel" },
-    { emoji:"🦄", label:"Magisch goed" },
-    { emoji:"🦉", label:"Wijze uil" },
-    { emoji:"🌈", label:"Top gedaan!" },
-    { emoji:"🐼", label:"Super!" },
-    { emoji:"🎯", label:"Perfect!" },
-    { emoji:"🧠", label:"Breinbaas" },
-    { emoji:"⭐", label:"Ster!" }
-  ];
-  function pickRandomSticker(){
-    return STICKERS[Math.floor(Math.random() * STICKERS.length)];
+  function normalizeIndices(arr){
+    const set = new Set((arr||[]).map(n=>Number(n)).filter(n=>Number.isFinite(n) && n>=0 && n<=3));
+    return Array.from(set).sort((a,b)=>a-b);
+  }
+  function equalSet(a,b){
+    a = normalizeIndices(a); b = normalizeIndices(b);
+    if(a.length !== b.length) return false;
+    for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false;
+    return true;
   }
 
   // ===== Default DB =====
@@ -454,24 +427,19 @@
 `Saar en Amin doen mee aan een ijsjeswedstrijd. Ze moeten in tien minuten zoveel mogelijk ijsjes verkopen.
 Amin is snel met rekenen, maar praat zacht. Saar praat heel overtuigend, maar moet soms langer nadenken over geld teruggeven.
 
-Na vijf minuten heeft Saar meer ijsjes verkocht dan Amin. Amin ziet dat Saar bij elke klant glimlacht en een kort praatje maakt.
-Daarna probeert Amin hetzelfde te doen. Hij praat iets harder en maakt ook een grapje.
+- Saar glimlacht en maakt een praatje.
+- Amin leert harder praten.
 
-Aan het einde hebben ze bijna evenveel ijsjes verkocht. Amin is blij: hij heeft iets geleerd dat hij morgen weer kan gebruiken.
+[img]https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Ice_cream_cone.jpg/640px-Ice_cream_cone.jpg[/img]
 
-Later kwamen bekende spellen:
+Stoommachines
 
-- The Legend of Zelda (avontuur en ontdekken)
-- Street Fighter (tegen elkaar vechten)
-- Sonic (snelheid en actie)
-
-Kopje voorbeeld
-
-Zet kopjes op een eigen regel en laat daarna een lege regel.`,
+Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna een lege regel.`,
         imageUrl: "",
         imageCaption: "",
         questions: [
           {
+            type: "single",
             text: "Waarom verkocht Saar in het begin meer ijsjes?",
             options: [
               "Omdat ze sneller kon rekenen",
@@ -481,6 +449,18 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
             ],
             correctIndex: 1,
             explanation: "In alinea 2 staat dat Saar glimlacht en een praatje maakt; dat helpt bij verkopen."
+          },
+          {
+            type: "multi",
+            text: "Welke 2 dingen helpt Amin later ook te doen? (kies 2)",
+            options: [
+              "Harder praten",
+              "Glimlachen / praatje maken",
+              "De prijs verhogen",
+              "Stoppen met verkopen"
+            ],
+            correctIndices: [0,1],
+            explanation: "In alinea 3 staat dat Amin harder praat en een grapje maakt (zoals Saar: sociaal doen)."
           }
         ]
       }
@@ -490,9 +470,10 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
   function loadDB(){
     try{
       const raw = localStorage.getItem(KEY);
-      if(!raw) return deepClone(defaultDB);
+      if(!raw) return clone(defaultDB);
       const db = JSON.parse(raw);
-      if(!db || !Array.isArray(db.lessons) || db.lessons.length === 0) return deepClone(defaultDB);
+      if(!db || !Array.isArray(db.lessons) || db.lessons.length===0) return clone(defaultDB);
+
       db.lessons.forEach(l=>{
         l.id = l.id || cryptoRandomId();
         l.title = l.title || "Zonder titel";
@@ -500,10 +481,36 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
         l.imageUrl = l.imageUrl || "";
         l.imageCaption = l.imageCaption || "";
         l.questions = Array.isArray(l.questions) ? l.questions : [];
+
+        // Normalize questions to support BOTH old and new formats
+        l.questions.forEach(q=>{
+          q.type = q.type === "multi" ? "multi" : "single";
+          q.text = q.text || "";
+          q.options = Array.isArray(q.options) ? q.options : ["","","",""];
+          q.options = [q.options[0]||"", q.options[1]||"", q.options[2]||"", q.options[3]||""];
+
+          if(q.type === "single"){
+            // old format: correctIndex
+            if(q.correctIndex === undefined && Array.isArray(q.correctIndices) && q.correctIndices.length){
+              q.correctIndex = Number(q.correctIndices[0]) || 0;
+            }
+            q.correctIndex = Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : 0;
+            q.explanation = q.explanation ?? q.explain ?? "";
+          }else{
+            // multi format: correctIndices array
+            if(!Array.isArray(q.correctIndices)){
+              if(Number.isFinite(Number(q.correctIndex))) q.correctIndices = [Number(q.correctIndex)];
+              else q.correctIndices = [];
+            }
+            q.correctIndices = normalizeIndices(q.correctIndices);
+            q.explanation = q.explanation ?? q.explain ?? "";
+          }
+        });
       });
+
       return db;
     }catch{
-      return deepClone(defaultDB);
+      return clone(defaultDB);
     }
   }
   function saveDB(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
@@ -514,66 +521,44 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
       if(!raw) return [];
       const arr = JSON.parse(raw);
       return Array.isArray(arr) ? arr : [];
-    }catch{
-      return [];
-    }
+    }catch{ return []; }
   }
-  function saveHistory(arr){
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(arr));
-  }
+  function saveHistory(arr){ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }
 
-  // ===== Pretty formatter (headings, paragraphs, bullets, [img]URL[/img]) =====
+  // ===== Pretty reading formatter (plain text -> HTML) =====
   function formatReadingText(txt){
     if(!txt) return "";
     txt = txt.replace(/\r/g, "");
 
-    const blocks = txt.split(/\n\s*\n/);
+    const lines = txt.split("\n");
     let html = "";
+    let para = [];
+    let listType = null; // "ul" | "ol"
+    let listItems = [];
 
-    for(const block of blocks){
-      const clean = block.trim();
-      if(!clean) continue;
+    function flushPara(){
+      const block = para.join("\n").trim();
+      para = [];
+      if(!block) return;
 
-      const lines = clean.split("\n").map(l=>l.trim()).filter(Boolean);
-      if(lines.length === 0) continue;
-
-      // image block
-      if(lines.length === 1){
-        const m = lines[0].match(/^\[img\](.+?)\[\/img\]$/i);
-        if(m){
-          const url = m[1].trim();
-          html += `<div class="imgWrap"><img src="${escapeHtml(url)}" alt="Afbeelding" loading="lazy"></div>`;
-          continue;
+      // If single short line without punctuation -> treat as title
+      const only = block.split("\n").map(s=>s.trim()).filter(Boolean);
+      if(only.length === 1){
+        const line = only[0];
+        const looksLikeTitle = line.length <= 60 && !/[.,;:]$/.test(line);
+        if(looksLikeTitle){
+          html += `<div class="title">${escapeHtml(line)}</div>`;
+          return;
         }
       }
 
-      // bullet block
-      const isBullet = lines.every(l => /^(\- |\* |• )/.test(l));
-      if(isBullet){
-        const items = lines.map(l => l.replace(/^(\- |\* |• )/, "").trim()).filter(Boolean);
-        html += `<ul>${items.map(it => `<li>${escapeHtml(it)}</li>`).join("")}</ul>`;
-        continue;
-      }
-
-      // heading
-      const isSingleLine = (lines.length === 1);
-      const line = lines[0] || "";
-      const looksLikeTitle =
-        isSingleLine &&
-        line.length <= 70 &&
-        !/[.,;:]$/.test(line);
-
-      if(looksLikeTitle){
-        html += `<div class="title">${escapeHtml(line)}</div>`;
-        continue;
-      }
-
-      // paragraph
-      const rendered = lines.map(l=>{
-        const m = l.match(/^\[img\](.+?)\[\/img\]$/i);
-        if(m){
-          const url = m[1].trim();
-          return `<div class="imgWrap"><img src="${escapeHtml(url)}" alt="Afbeelding" loading="lazy"></div>`;
+      // support [img]...[/img] inside paragraph lines
+      const rendered = only.map(l=>{
+        const t = l.trim();
+        if(t.startsWith("[img]") && t.endsWith("[/img]")){
+          const url = t.slice(5,-6).trim();
+          const safeUrl = escapeHtml(url);
+          return `<div class="imgWrap"><img src="${safeUrl}" loading="lazy" alt="Afbeelding"></div>`;
         }
         return escapeHtml(l);
       }).join("<br>");
@@ -581,28 +566,85 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
       html += `<p>${rendered}</p>`;
     }
 
+    function flushList(){
+      if(!listType || listItems.length === 0) { listType=null; listItems=[]; return; }
+      const tag = listType === "ol" ? "ol" : "ul";
+      html += `<${tag}>` + listItems.map(li=>`<li>${escapeHtml(li)}</li>`).join("") + `</${tag}>`;
+      listType = null; listItems = [];
+    }
+
+    for(const rawLine of lines){
+      const line = rawLine.replace(/\s+$/,"");
+      const trimmed = line.trim();
+
+      // blank line: close current structures
+      if(!trimmed){
+        flushPara();
+        flushList();
+        continue;
+      }
+
+      // list detection: "- " or "* " bullets, or "1. " ordered list
+      const mUl = trimmed.match(/^[-*]\s+(.*)$/);
+      const mOl = trimmed.match(/^\d+\.\s+(.*)$/);
+
+      if(mUl){
+        flushPara();
+        if(listType && listType !== "ul") flushList();
+        listType = "ul";
+        listItems.push(mUl[1]);
+        continue;
+      }
+      if(mOl){
+        flushPara();
+        if(listType && listType !== "ol") flushList();
+        listType = "ol";
+        listItems.push(mOl[1]);
+        continue;
+      }
+
+      // normal line
+      flushList();
+      para.push(line);
+    }
+
+    flushPara();
+    flushList();
     return html;
+  }
+
+  // ===== Stickers (global, changes each finish) =====
+  const STICKERS = [
+    { emoji:"🏆", label:"Kampioen" },
+    { emoji:"🦊", label:"Slimme vos" },
+    { emoji:"🚀", label:"Raketsnel" },
+    { emoji:"🦄", label:"Magisch goed" },
+    { emoji:"🦉", label:"Wijze uil" },
+    { emoji:"🌈", label:"Top gedaan!" },
+    { emoji:"🐼", label:"Super!" },
+    { emoji:"🎯", label:"Perfect!" },
+    { emoji:"🧠", label:"Breinbaas" },
+    { emoji:"🌟", label:"Ster!" }
+  ];
+  function pickRandomSticker(){
+    return STICKERS[Math.floor(Math.random() * STICKERS.length)];
   }
 
   // ===== App state =====
   let DB = loadDB();
-  let currentLessonId = DB.lessons[0].id;
+  let currentLessonId = DB.lessons[0]?.id || cryptoRandomId();
 
+  // quiz state
   let quiz = {
-    started:false,
-    qIndex:0,
-    locked:false,
-    answers:[],
-    correctCount:0
+    started: false,
+    qIndex: 0,
+    locked: false,
+    answers: [],          // per question: number (single) or array<number> (multi)
+    correctCount: 0
   };
 
-  function resetQuiz(){
-    quiz.started = false;
-    quiz.qIndex = 0;
-    quiz.locked = false;
-    quiz.answers = [];
-    quiz.correctCount = 0;
-  }
+  // parent edit state
+  let editingQuestionIndex = null;
 
   // ===== Tabs =====
   const tabKid = document.getElementById("tabKid");
@@ -614,7 +656,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
   tabParent.onclick = ()=> setMode("parent");
 
   function setMode(mode){
-    if(mode === "kid"){
+    if(mode==="kid"){
       tabKid.classList.add("active");
       tabParent.classList.remove("active");
       kidView.style.display = "";
@@ -634,26 +676,25 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     return DB.lessons.find(l=>l.id===id) || DB.lessons[0];
   }
 
-  // ===== Kid UI =====
+  // ===== Kid UI elements =====
   const lessonSelect = document.getElementById("lessonSelect");
   const kidTitle = document.getElementById("kidTitle");
   const kidText = document.getElementById("kidText");
-  const textLayout = document.getElementById("textLayout");
-
   const progNow = document.getElementById("progNow");
   const progTotal = document.getElementById("progTotal");
   const scoreNow = document.getElementById("scoreNow");
   const scoreTotal = document.getElementById("scoreTotal");
-
   const startBtn = document.getElementById("startBtn");
+  const submitBtn = document.getElementById("submitBtn");
   const nextBtn = document.getElementById("nextBtn");
   const oneQuestion = document.getElementById("oneQuestion");
   const endScreen = document.getElementById("endScreen");
+  const kidHint = document.getElementById("kidHint");
 
+  // side image
   const kidSideMedia = document.getElementById("kidSideMedia");
   const kidImg = document.getElementById("kidImg");
   const kidImgCaption = document.getElementById("kidImgCaption");
-  const kidImgWarn = document.getElementById("kidImgWarn");
 
   function renderLessonDropdown(selectEl){
     selectEl.innerHTML = "";
@@ -679,7 +720,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
 
   startBtn.onclick = ()=>{
     const lesson = getLessonById(currentLessonId);
-    if(lesson.questions.length === 0){
+    if(!lesson || lesson.questions.length === 0){
       alert("Er staan nog geen vragen in deze tekst.");
       return;
     }
@@ -689,6 +730,15 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     quiz.answers = Array(lesson.questions.length).fill(null);
     quiz.correctCount = 0;
     renderKid();
+  };
+
+  submitBtn.onclick = ()=>{
+    // only used for multi questions
+    const lesson = getLessonById(currentLessonId);
+    if(!quiz.started) return;
+    const q = lesson.questions[quiz.qIndex];
+    if(q.type !== "multi") return;
+    submitMultiAnswer(lesson);
   };
 
   nextBtn.onclick = ()=>{
@@ -704,45 +754,41 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     }
   };
 
+  function resetQuiz(){
+    quiz.started = false;
+    quiz.qIndex = 0;
+    quiz.locked = false;
+    quiz.answers = [];
+    quiz.correctCount = 0;
+    startBtn.style.display = "";
+    submitBtn.style.display = "none";
+    nextBtn.style.display = "none";
+    endScreen.style.display = "none";
+  }
+
   function setSideImage(lesson){
     const url = (lesson.imageUrl || "").trim();
     const cap = (lesson.imageCaption || "").trim();
 
-    kidImgWarn.style.display = "none";
-    kidImgCaption.style.display = "none";
-    kidImgCaption.textContent = "";
-
-    if(!url){
+    if(url){
+      kidImg.src = url;
+      kidSideMedia.style.display = "";
+      if(cap){
+        kidImgCaption.textContent = cap;
+        kidImgCaption.style.display = "";
+      }else{
+        kidImgCaption.style.display = "none";
+      }
+    }else{
       kidSideMedia.style.display = "none";
       kidImg.removeAttribute("src");
-      textLayout.classList.remove("hasImage");
-      return;
+      kidImgCaption.style.display = "none";
     }
-
-    kidSideMedia.style.display = "";
-    textLayout.classList.add("hasImage");
-
-    if(cap){
-      kidImgCaption.textContent = cap;
-      kidImgCaption.style.display = "";
-    }
-
-    kidImg.onload = ()=>{ kidImgWarn.style.display = "none"; };
-    kidImg.onerror = ()=>{
-      kidImgWarn.style.display = "";
-      kidImgWarn.innerHTML =
-        "Deze afbeelding kan niet geladen worden (sommige websites blokkeren hotlinking).<br>" +
-        "Tip: gebruik een andere URL (Wikimedia/Wikipedia werkt vaak).";
-    };
-
-    kidImg.src = url;
   }
 
   function renderKid(){
-    // ensure we always have at least one lesson
     if(!DB.lessons || DB.lessons.length === 0){
-      DB = deepClone(defaultDB);
-      currentLessonId = DB.lessons[0].id;
+      DB = clone(defaultDB);
       saveDB();
     }
 
@@ -762,9 +808,11 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
 
     if(!quiz.started){
       startBtn.style.display = "";
+      submitBtn.style.display = "none";
       nextBtn.style.display = "none";
       oneQuestion.innerHTML = `<div class="muted">Klik <strong>Start</strong> om te beginnen.</div>`;
       endScreen.style.display = "none";
+      kidHint.textContent = "Je kunt per vraag maar 1x kiezen.";
     }else{
       startBtn.style.display = "none";
       endScreen.style.display = "none";
@@ -776,63 +824,117 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     const total = lesson.questions.length;
     if(total === 0){
       oneQuestion.innerHTML = `<div class="muted">Geen vragen in deze tekst.</div>`;
+      submitBtn.style.display = "none";
       nextBtn.style.display = "none";
       return;
     }
 
     const q = lesson.questions[quiz.qIndex];
-    oneQuestion.innerHTML = "";
+    const chosen = quiz.answers[quiz.qIndex];
 
+    kidHint.textContent = q.type === "multi"
+      ? "Multiple choice: je mag meerdere opties aankruisen, daarna ‘Controleer’."
+      : "Meerkeuze: je kiest 1 optie (daarna kun je niet meer veranderen).";
+
+    oneQuestion.innerHTML = "";
     const box = document.createElement("div");
     box.className = "q";
 
     const title = document.createElement("div");
-    title.innerHTML = `<strong>Vraag ${quiz.qIndex+1}.</strong> ${escapeHtml(q.text || "")}`;
+    title.innerHTML = `<strong>Vraag ${quiz.qIndex+1}.</strong> ${escapeHtml(q.text || "").replaceAll("\n","<br>")}`;
     box.appendChild(title);
-
-    const chosen = quiz.answers[quiz.qIndex];
-
-    (q.options || []).forEach((opt, oi)=>{
-      const lab = document.createElement("label");
-      lab.className = "opt" + (quiz.locked ? " disabled" : "");
-
-      const r = document.createElement("input");
-      r.type = "radio";
-      r.name = "q" + quiz.qIndex;
-      r.value = oi;
-      r.style.marginRight = "10px";
-      r.disabled = quiz.locked;
-      if(chosen === oi) r.checked = true;
-
-      lab.appendChild(r);
-      lab.appendChild(document.createTextNode(opt || ""));
-
-      if(!quiz.locked){
-        lab.onclick = (ev)=>{
-          ev.preventDefault();
-          lockAnswer(lesson, oi);
-        };
-      }
-      box.appendChild(lab);
-    });
 
     const fb = document.createElement("div");
     fb.id = "fb";
     box.appendChild(fb);
 
+    // SINGLE (radio) = lock immediately on click (like before)
+    if(q.type !== "multi"){
+      (q.options || []).forEach((opt, oi)=>{
+        const lab = document.createElement("label");
+        lab.className = "opt" + (quiz.locked ? " disabled" : "");
+
+        const r = document.createElement("input");
+        r.type = "radio";
+        r.name = "q" + quiz.qIndex;
+        r.value = oi;
+        r.style.marginRight = "10px";
+        r.disabled = quiz.locked;
+        if(chosen === oi) r.checked = true;
+
+        lab.appendChild(r);
+        lab.appendChild(document.createTextNode(opt || ""));
+
+        if(!quiz.locked){
+          lab.onclick = (ev)=>{
+            ev.preventDefault();
+            lockSingleAnswer(lesson, oi);
+          };
+        }
+
+        box.insertBefore(lab, fb);
+      });
+
+      oneQuestion.appendChild(box);
+
+      if(chosen !== null && chosen !== undefined){
+        showLockedFeedback(q, chosen);
+        quiz.locked = true;
+        submitBtn.style.display = "none";
+        nextBtn.style.display = "";
+        nextBtn.textContent = (quiz.qIndex === total - 1) ? "Resultaat" : "Volgende";
+      }else{
+        submitBtn.style.display = "none";
+        nextBtn.style.display = "none";
+      }
+      return;
+    }
+
+    // MULTI (checkbox) = allow select many, then "Controleer"
+    const picked = Array.isArray(chosen) ? chosen.slice() : [];
+    const tempPicked = new Set(picked);
+
+    (q.options || []).forEach((opt, oi)=>{
+      const lab = document.createElement("label");
+      lab.className = "opt" + (quiz.locked ? " disabled" : "");
+
+      const c = document.createElement("input");
+      c.type = "checkbox";
+      c.value = oi;
+      c.style.marginRight = "10px";
+      c.disabled = quiz.locked;
+      c.checked = tempPicked.has(oi);
+
+      c.onchange = ()=>{
+        if(c.checked) tempPicked.add(oi);
+        else tempPicked.delete(oi);
+        // store as the user ticks (still not locked until submit)
+        quiz.answers[quiz.qIndex] = Array.from(tempPicked).sort((a,b)=>a-b);
+      };
+
+      lab.appendChild(c);
+      lab.appendChild(document.createTextNode(opt || ""));
+      box.insertBefore(lab, fb);
+    });
+
     oneQuestion.appendChild(box);
 
-    if(chosen !== null && chosen !== undefined){
-      showLockedFeedback(q, chosen);
-      quiz.locked = true;
+    if(quiz.locked){
+      // already submitted/locked
+      showLockedFeedbackMulti(q, picked);
+      submitBtn.style.display = "none";
       nextBtn.style.display = "";
       nextBtn.textContent = (quiz.qIndex === total - 1) ? "Resultaat" : "Volgende";
     }else{
+      // not locked yet
+      submitBtn.style.display = "";
       nextBtn.style.display = "none";
+      // if no selection yet, keep empty array stored so it doesn't crash
+      if(quiz.answers[quiz.qIndex] == null) quiz.answers[quiz.qIndex] = [];
     }
   }
 
-  function lockAnswer(lesson, chosenIndex){
+  function lockSingleAnswer(lesson, chosenIndex){
     const q = lesson.questions[quiz.qIndex];
     if(quiz.answers[quiz.qIndex] !== null && quiz.answers[quiz.qIndex] !== undefined) return;
 
@@ -840,29 +942,67 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     quiz.locked = true;
 
     if(chosenIndex === q.correctIndex) quiz.correctCount++;
-
     scoreNow.textContent = quiz.correctCount;
+
     showLockedFeedback(q, chosenIndex);
 
+    submitBtn.style.display = "none";
     nextBtn.style.display = "";
     nextBtn.textContent = (quiz.qIndex === lesson.questions.length - 1) ? "Resultaat" : "Volgende";
 
-    setTimeout(()=> renderKid(), 20);
+    setTimeout(()=> renderKid(), 50);
+  }
+
+  function submitMultiAnswer(lesson){
+    const q = lesson.questions[quiz.qIndex];
+    if(q.type !== "multi") return;
+
+    const chosenArr = normalizeIndices(quiz.answers[quiz.qIndex] || []);
+    // lock only once
+    if(quiz.locked) return;
+
+    quiz.answers[quiz.qIndex] = chosenArr;
+    quiz.locked = true;
+
+    const isCorrect = equalSet(chosenArr, q.correctIndices || []);
+    if(isCorrect) quiz.correctCount++;
+    scoreNow.textContent = quiz.correctCount;
+
+    showLockedFeedbackMulti(q, chosenArr);
+
+    submitBtn.style.display = "none";
+    nextBtn.style.display = "";
+    nextBtn.textContent = (quiz.qIndex === lesson.questions.length - 1) ? "Resultaat" : "Volgende";
+
+    setTimeout(()=> renderKid(), 50);
   }
 
   function showLockedFeedback(q, chosenIndex){
     const fb = document.getElementById("fb");
-    if(!fb) return;
-
     const good = chosenIndex === q.correctIndex;
-    const explain = q.explanation
-      ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(q.explanation)}</div>`
-      : "";
+    const explain = q.explanation ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(q.explanation)}</div>` : "";
 
     fb.className = "feedback " + (good ? "good" : "bad");
     fb.innerHTML = good
       ? `<span class="ok">✅ Goed!</span>${explain}`
       : `<span class="no">❌ Fout.</span> <span class="muted small">Juiste antwoord: ${idxToLetter(q.correctIndex)}</span>${explain}`;
+  }
+
+  function showLockedFeedbackMulti(q, chosenArr){
+    const fb = document.getElementById("fb");
+    const correctArr = normalizeIndices(q.correctIndices || []);
+    const good = equalSet(chosenArr, correctArr);
+
+    const chosenTxt = chosenArr.length ? chosenArr.map(idxToLetter).join(", ") : "-";
+    const corrTxt = correctArr.length ? correctArr.map(idxToLetter).join(", ") : "-";
+    const explain = q.explanation ? `<div class="muted small" style="margin-top:8px;">${escapeHtml(q.explanation)}</div>` : "";
+
+    fb.className = "feedback " + (good ? "good" : "bad");
+    fb.innerHTML = good
+      ? `<span class="ok">✅ Goed!</span> <span class="muted small">(${chosenTxt})</span>${explain}`
+      : `<span class="no">❌ Niet helemaal.</span>
+         <div class="muted small" style="margin-top:6px;">Jij koos: <strong>${escapeHtml(chosenTxt)}</strong> • Juiste: <strong>${escapeHtml(corrTxt)}</strong></div>
+         ${explain}`;
   }
 
   function finishQuiz(){
@@ -871,13 +1011,26 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     const correct = quiz.correctCount;
     const wrong = total - correct;
 
-    const details = lesson.questions.map((q, i)=>({
-      qIndex: i,
-      question: q.text || "",
-      chosenIndex: quiz.answers[i],
-      correctIndex: q.correctIndex,
-      isCorrect: quiz.answers[i] === q.correctIndex
-    }));
+    const details = lesson.questions.map((q, i)=>{
+      const chosen = quiz.answers[i];
+      let isCorrect = false;
+
+      if(q.type === "multi"){
+        isCorrect = equalSet(normalizeIndices(chosen||[]), normalizeIndices(q.correctIndices||[]));
+      }else{
+        isCorrect = Number(chosen) === Number(q.correctIndex);
+      }
+
+      return {
+        qIndex: i,
+        type: q.type || "single",
+        question: q.text || "",
+        chosen,
+        correctIndex: q.correctIndex,
+        correctIndices: q.correctIndices,
+        isCorrect
+      };
+    });
 
     const attempt = {
       id: cryptoRandomId(),
@@ -893,6 +1046,7 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     saveHistory(history.slice(0, 500));
 
     oneQuestion.innerHTML = "";
+    submitBtn.style.display = "none";
     nextBtn.style.display = "none";
 
     const stickerWon = (wrong <= 1);
@@ -908,10 +1062,11 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
 
         ${stickerWon ? `
           <div class="center">
-            <div class="bigSticker" title="${escapeHtml(chosenSticker.label)}">${chosenSticker.emoji}</div>
+            <div class="bigSticker" title="${escapeHtml(chosenSticker.label)}">
+              ${chosenSticker.emoji}
+            </div>
             <div class="muted" style="margin-top:8px;">
-              <strong>Sticker verdiend!</strong> (${escapeHtml(chosenSticker.label)})<br>
-              <span class="small muted">(0 of 1 fout)</span>
+              <strong>Sticker verdiend!</strong> (${escapeHtml(chosenSticker.label)})
             </div>
           </div>
         ` : `
@@ -978,40 +1133,39 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
   const editImgCaption = document.getElementById("editImgCaption");
   const questionList = document.getElementById("questionList");
 
-  let editingQuestionIndex = null;
+  // question form
+  const qTypeEl = document.getElementById("qType");
+  const qTextEl = document.getElementById("qText");
+  const aEls = ["a0","a1","a2","a3"].map(id => document.getElementById(id));
+  const correctSingleEl = document.getElementById("correctSingle");
+  const explainSingleEl = document.getElementById("explain");
+  const explainMultiEl = document.getElementById("explain2");
+  const mChecks = ["m0","m1","m2","m3"].map(id => document.getElementById(id));
+  const addQuestionBtn = document.getElementById("addQuestion");
+  const cancelEditBtn = document.getElementById("cancelEdit");
+  const singleCorrectRow = document.getElementById("singleCorrectRow");
+  const multiCorrectRow = document.getElementById("multiCorrectRow");
 
-    const addQuestionBtn = document.getElementById("addQuestion");
-    const qTextEl = document.getElementById("qText");
-    const aEls = ["a0","a1","a2","a3"].map(id => document.getElementById(id));
-    const correctEl = document.getElementById("correct");
-    const explainEl = document.getElementById("explain");
-
-    function clearQuestionForm(){
-      editingQuestionIndex = null;
-      qTextEl.value = "";
-      aEls.forEach(el => el.value = "");
-      correctEl.value = "0";
-      explainEl.value = "";
-      addQuestionBtn.textContent = "Vraag toevoegen";
+  function setQuestionTypeUI(){
+    const t = qTypeEl.value;
+    if(t === "multi"){
+      singleCorrectRow.style.display = "none";
+      multiCorrectRow.style.display = "";
+      addQuestionBtn.textContent = (editingQuestionIndex === null) ? "Vraag toevoegen" : "Vraag bijwerken";
+    }else{
+      singleCorrectRow.style.display = "";
+      multiCorrectRow.style.display = "none";
+      addQuestionBtn.textContent = (editingQuestionIndex === null) ? "Vraag toevoegen" : "Vraag bijwerken";
     }
+  }
+  qTypeEl.onchange = setQuestionTypeUI;
 
-    function loadQuestionIntoForm(q, idx){
-      editingQuestionIndex = idx;
-      qTextEl.value = q.text || "";
-      (q.options || []).forEach((v,i)=>{ if(aEls[i]) aEls[i].value = v || ""; });
-      correctEl.value = String(q.correctIndex ?? 0);
-      explainEl.value = q.explanation || "";
-      addQuestionBtn.textContent = "Vraag bijwerken";
-      // scroll to form
-      qTextEl.scrollIntoView({ behavior:"smooth", block:"center" });
-    }
-
-  
   parentLessonSelect.onchange = (e)=>{
     currentLessonId = e.target.value;
     fillEditor();
     renderQuestionList();
     renderHistory();
+    resetQuiz();
     renderKid();
   };
 
@@ -1023,46 +1177,44 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     renderHistory();
   }
 
+  function clearQuestionForm(){
+    editingQuestionIndex = null;
+    qTypeEl.value = "single";
+    qTextEl.value = "";
+    aEls.forEach(el=>el.value="");
+    correctSingleEl.value = "0";
+    explainSingleEl.value = "";
+    explainMultiEl.value = "";
+    mChecks.forEach(c=>c.checked=false);
+    addQuestionBtn.textContent = "Vraag toevoegen";
+    cancelEditBtn.style.display = "none";
+    setQuestionTypeUI();
+  }
+
   function fillEditor(){
-      const lesson = getLessonById(currentLessonId);
-      currentLessonId = lesson.id;
+    const lesson = getLessonById(currentLessonId);
+    currentLessonId = lesson.id;
 
-      editTitle.value = lesson.title || "";
-      editText.value  = lesson.text  || "";
-      editImgUrl.value = lesson.imageUrl || "";
-      editImgCaption.value = lesson.imageCaption || "";
+    editTitle.value = lesson.title || "";
+    editText.value = lesson.text || "";
+    editImgUrl.value = lesson.imageUrl || "";
+    editImgCaption.value = lesson.imageCaption || "";
 
-      // BELANGRIJK: alleen form resetten, geen onclick hier!
-      clearQuestionForm();
-    }
+    clearQuestionForm();
+  }
 
-addQuestionBtn.onclick = ()=>{
-      const lesson = getLessonById(currentLessonId);
+  cancelEditBtn.onclick = clearQuestionForm;
 
-      const qt = (qTextEl.value || "").trim();
-      const opts = aEls.map(el => (el.value || "").trim());
-      const correctIndex = Number(correctEl.value);
-      const explanation = (explainEl.value || "").trim();
-
-      if(!qt){ alert("Vul een vraag in."); return; }
-      if(opts.some(o=>!o)){ alert("Vul alle 4 antwoordopties in."); return; }
-
-      const payload = { text: qt, options: opts, correctIndex, explanation };
-
-      if(editingQuestionIndex === null){
-        // add
-        lesson.questions.push(payload);
-      }else{
-        // update
-        lesson.questions[editingQuestionIndex] = payload;
-      }
-
-      saveDB();
-      clearQuestionForm();
-      renderQuestionList();
-      resetQuiz();
-      renderKid();
-    };    
+  document.getElementById("addLesson").onclick = ()=>{
+    const newLesson = { id: cryptoRandomId(), title: "Nieuwe tekst", text: "", imageUrl:"", imageCaption:"", questions: [] };
+    DB.lessons.unshift(newLesson);
+    currentLessonId = newLesson.id;
+    saveDB();
+    renderParent();
+    renderLessonDropdown(lessonSelect);
+    resetQuiz();
+    renderKid();
+  };
 
   document.getElementById("deleteLesson").onclick = ()=>{
     if(DB.lessons.length <= 1){
@@ -1093,148 +1245,156 @@ addQuestionBtn.onclick = ()=>{
     alert("Opgeslagen!");
   };
 
-  document.getElementById("addQuestion").onclick = ()=>{
+  addQuestionBtn.onclick = ()=>{
     const lesson = getLessonById(currentLessonId);
-    const qt = (document.getElementById("qText").value || "").trim();
-    const opts = ["a0","a1","a2","a3"].map(id => (document.getElementById(id).value || "").trim());
-    const correctIndex = Number(document.getElementById("correct").value);
-    const explanation = (document.getElementById("explain").value || "").trim();
 
+    const type = qTypeEl.value === "multi" ? "multi" : "single";
+    const qt = (qTextEl.value || "").trim();
+    const opts = aEls.map(el => (el.value || "").trim());
     if(!qt){ alert("Vul een vraag in."); return; }
     if(opts.some(o=>!o)){ alert("Vul alle 4 antwoordopties in."); return; }
 
-    lesson.questions.push({ text: qt, options: opts, correctIndex, explanation });
+    let payload = { type, text: qt, options: opts };
+
+    if(type === "single"){
+      payload.correctIndex = Number(correctSingleEl.value);
+      payload.explanation = (explainSingleEl.value || "").trim();
+    }else{
+      const correctIndices = mChecks.map((c,idx)=> c.checked ? idx : null).filter(v=>v!==null);
+      if(correctIndices.length === 0){
+        alert("Kies bij multiple choice minstens 1 juiste optie.");
+        return;
+      }
+      payload.correctIndices = normalizeIndices(correctIndices);
+      payload.explanation = (explainMultiEl.value || "").trim();
+    }
+
+    if(editingQuestionIndex === null){
+      lesson.questions.push(payload);
+    }else{
+      lesson.questions[editingQuestionIndex] = payload;
+    }
+
     saveDB();
-
-    document.getElementById("qText").value = "";
-    ["a0","a1","a2","a3"].forEach(id => document.getElementById(id).value = "");
-    document.getElementById("correct").value = "0";
-    document.getElementById("explain").value = "";
-
+    clearQuestionForm();
     renderQuestionList();
     resetQuiz();
     renderKid();
   };
 
-  function moveQuestion(lesson, from, to){
-  if(to < 0 || to >= lesson.questions.length) return;
-  const tmp = lesson.questions[from];
-  lesson.questions[from] = lesson.questions[to];
-  lesson.questions[to] = tmp;
-}
+  function renderQuestionList(){
+    const lesson = getLessonById(currentLessonId);
+    questionList.innerHTML = "";
 
-function renderQuestionList(){
-      const lesson = getLessonById(currentLessonId);
-      questionList.innerHTML = "";
-
-      if(lesson.questions.length === 0){
-        questionList.innerHTML = `<div class="muted">Nog geen vragen. Voeg hierboven vragen toe (bv. 15).</div>`;
-        return;
-      }
-
-      lesson.questions.forEach((q, i)=>{
-        const div = document.createElement("div");
-        div.className = "listItem";
-
-        const isEditing = (editingQuestionIndex === i);
-
-        div.innerHTML = `
-          <div class="two">
-            <div>
-              <strong>${i+1}.</strong> ${escapeHtml(q.text || "")}
-              ${isEditing ? ` <span class="pill" style="margin-left:8px;">Bewerken</span>` : ``}
-            </div>
-
-            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
-              <button class="ghost" type="button" data-up="${i}">↑</button>
-              <button class="ghost" type="button" data-down="${i}">↓</button>
-              <button class="primary" type="button" data-edit="${i}">Bewerk</button>
-              <button class="danger" type="button" data-del="${i}">Verwijder</button>
-            </div>
-          </div>
-
-          <div class="muted small" style="margin-top:6px;">
-            A: ${escapeHtml((q.options||[])[0]||"")}<br>
-            B: ${escapeHtml((q.options||[])[1]||"")}<br>
-            C: ${escapeHtml((q.options||[])[2]||"")}<br>
-            D: ${escapeHtml((q.options||[])[3]||"")}<br>
-            <strong>Juiste antwoord:</strong> ${idxToLetter(q.correctIndex)}
-            ${q.explanation ? `<br><strong>Uitleg:</strong> ${escapeHtml(q.explanation)}` : ""}
-          </div>
-        `;
-
-        questionList.appendChild(div);
-      });
-
-      // Up
-      questionList.querySelectorAll("button[data-up]").forEach(btn=>{
-        btn.onclick = ()=>{
-          const idx = Number(btn.getAttribute("data-up"));
-          const lesson = getLessonById(currentLessonId);
-
-          moveQuestion(lesson, idx, idx-1);
-
-          // keep editing index aligned
-          if(editingQuestionIndex === idx) editingQuestionIndex = idx-1;
-          else if(editingQuestionIndex === idx-1) editingQuestionIndex = idx;
-
-          saveDB();
-          renderQuestionList();
-          resetQuiz();
-          renderKid();
-        };
-      });
-
-      // Down
-      questionList.querySelectorAll("button[data-down]").forEach(btn=>{
-        btn.onclick = ()=>{
-          const idx = Number(btn.getAttribute("data-down"));
-          const lesson = getLessonById(currentLessonId);
-
-          moveQuestion(lesson, idx, idx+1);
-
-          if(editingQuestionIndex === idx) editingQuestionIndex = idx+1;
-          else if(editingQuestionIndex === idx+1) editingQuestionIndex = idx;
-
-          saveDB();
-          renderQuestionList();
-          resetQuiz();
-          renderKid();
-        };
-      });
-
-      // Edit
-      questionList.querySelectorAll("button[data-edit]").forEach(btn=>{
-        btn.onclick = ()=>{
-          const idx = Number(btn.getAttribute("data-edit"));
-          const lesson = getLessonById(currentLessonId);
-          const q = lesson.questions[idx];
-          loadQuestionIntoForm(q, idx);
-          renderQuestionList();
-        };
-      });
-
-      // Delete
-      questionList.querySelectorAll("button[data-del]").forEach(btn=>{
-        btn.onclick = ()=>{
-          const idx = Number(btn.getAttribute("data-del"));
-          const lesson = getLessonById(currentLessonId);
-
-          if(!confirm("Deze vraag verwijderen?")) return;
-
-          lesson.questions.splice(idx, 1);
-
-          // adjust editing index
-          if(editingQuestionIndex === idx) clearQuestionForm();
-          else if(editingQuestionIndex !== null && editingQuestionIndex > idx) editingQuestionIndex--;
-
-          saveDB();
-          renderQuestionList();
-          resetQuiz();
-          renderKid();
-        };
-      });
+    if(!lesson.questions || lesson.questions.length === 0){
+      questionList.innerHTML = `<div class="muted">Nog geen vragen. Voeg hierboven vragen toe.</div>`;
+      return;
     }
+
+    lesson.questions.forEach((q, i)=>{
+      const typeTag = q.type === "multi" ? `<span class="tag">multi</span>` : `<span class="tag">single</span>`;
+      const correctInfo = q.type === "multi"
+        ? `Juiste: ${normalizeIndices(q.correctIndices||[]).map(idxToLetter).join(", ")}`
+        : `Juiste: ${idxToLetter(q.correctIndex)}`;
+
+      const div = document.createElement("div");
+      div.className = "listItem";
+      div.innerHTML = `
+        <div class="two">
+          <div><strong>${i+1}.</strong> ${escapeHtml(q.text || "").replaceAll("\n","<br>")} &nbsp; ${typeTag}</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            <button class="ghost" type="button" data-up="${i}" ${i===0 ? "disabled" : ""}>▲</button>
+            <button class="ghost" type="button" data-down="${i}" ${i===lesson.questions.length-1 ? "disabled" : ""}>▼</button>
+            <button class="ghost" type="button" data-edit="${i}">Bewerk</button>
+            <button class="danger" type="button" data-del="${i}">Verwijder</button>
+          </div>
+        </div>
+        <div class="muted small" style="margin-top:6px;">
+          A: ${escapeHtml((q.options||[])[0]||"")}<br>
+          B: ${escapeHtml((q.options||[])[1]||"")}<br>
+          C: ${escapeHtml((q.options||[])[2]||"")}<br>
+          D: ${escapeHtml((q.options||[])[3]||"")}<br>
+          <strong>${escapeHtml(correctInfo)}</strong>
+          ${q.explanation ? `<br><strong>Uitleg:</strong> ${escapeHtml(q.explanation)}` : ""}
+        </div>
+      `;
+      questionList.appendChild(div);
+    });
+
+    // delete
+    questionList.querySelectorAll("button[data-del]").forEach(btn=>{
+      btn.onclick = ()=>{
+        const idx = Number(btn.getAttribute("data-del"));
+        const lesson = getLessonById(currentLessonId);
+        lesson.questions.splice(idx, 1);
+        saveDB();
+        clearQuestionForm();
+        renderQuestionList();
+        resetQuiz();
+        renderKid();
+      };
+    });
+
+    // edit
+    questionList.querySelectorAll("button[data-edit]").forEach(btn=>{
+      btn.onclick = ()=>{
+        const idx = Number(btn.getAttribute("data-edit"));
+        const lesson = getLessonById(currentLessonId);
+        const q = lesson.questions[idx];
+
+        editingQuestionIndex = idx;
+
+        qTypeEl.value = q.type === "multi" ? "multi" : "single";
+        qTextEl.value = q.text || "";
+        aEls[0].value = (q.options||[])[0] || "";
+        aEls[1].value = (q.options||[])[1] || "";
+        aEls[2].value = (q.options||[])[2] || "";
+        aEls[3].value = (q.options||[])[3] || "";
+
+        if(q.type === "multi"){
+          mChecks.forEach(c=>c.checked=false);
+          normalizeIndices(q.correctIndices||[]).forEach(i=>{ if(mChecks[i]) mChecks[i].checked = true; });
+          explainMultiEl.value = q.explanation || "";
+          explainSingleEl.value = "";
+        }else{
+          correctSingleEl.value = String(Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : 0);
+          explainSingleEl.value = q.explanation || "";
+          explainMultiEl.value = "";
+          mChecks.forEach(c=>c.checked=false);
+        }
+
+        addQuestionBtn.textContent = "Vraag bijwerken";
+        cancelEditBtn.style.display = "";
+        setQuestionTypeUI();
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      };
+    });
+
+    // up
+    questionList.querySelectorAll("button[data-up]").forEach(btn=>{
+      btn.onclick = ()=>{
+        const i = Number(btn.getAttribute("data-up"));
+        const lesson = getLessonById(currentLessonId);
+        if(i <= 0) return;
+        [lesson.questions[i-1], lesson.questions[i]] = [lesson.questions[i], lesson.questions[i-1]];
+        saveDB();
+        renderQuestionList();
+      };
+    });
+
+    // down
+    questionList.querySelectorAll("button[data-down]").forEach(btn=>{
+      btn.onclick = ()=>{
+        const i = Number(btn.getAttribute("data-down"));
+        const lesson = getLessonById(currentLessonId);
+        if(i >= lesson.questions.length - 1) return;
+        [lesson.questions[i+1], lesson.questions[i]] = [lesson.questions[i], lesson.questions[i+1]];
+        saveDB();
+        renderQuestionList();
+      };
+    });
+  }
 
   // ===== Import/Export texts =====
   document.getElementById("exportData").onclick = ()=>{
@@ -1259,6 +1419,7 @@ function renderQuestionList(){
       try{
         const parsed = JSON.parse(txt);
         if(!parsed || !Array.isArray(parsed.lessons)) throw new Error();
+
         parsed.lessons.forEach(l=>{
           l.id = l.id || cryptoRandomId();
           l.title = l.title || "Zonder titel";
@@ -1266,7 +1427,28 @@ function renderQuestionList(){
           l.imageUrl = l.imageUrl || "";
           l.imageCaption = l.imageCaption || "";
           l.questions = Array.isArray(l.questions) ? l.questions : [];
+
+          // normalize like loadDB
+          l.questions.forEach(q=>{
+            q.type = q.type === "multi" ? "multi" : "single";
+            q.text = q.text || "";
+            q.options = Array.isArray(q.options) ? q.options : ["","","",""];
+            q.options = [q.options[0]||"", q.options[1]||"", q.options[2]||"", q.options[3]||""];
+
+            if(q.type === "single"){
+              q.correctIndex = Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : 0;
+              q.explanation = q.explanation ?? q.explain ?? "";
+            }else{
+              if(!Array.isArray(q.correctIndices)){
+                if(Number.isFinite(Number(q.correctIndex))) q.correctIndices = [Number(q.correctIndex)];
+                else q.correctIndices = [];
+              }
+              q.correctIndices = normalizeIndices(q.correctIndices);
+              q.explanation = q.explanation ?? q.explain ?? "";
+            }
+          });
         });
+
         DB = parsed;
         currentLessonId = DB.lessons[0]?.id || cryptoRandomId();
         saveDB();
@@ -1303,12 +1485,12 @@ function renderQuestionList(){
     });
     historyLessonFilter.value = "";
   }
+
   historyLessonFilter.onchange = ()=> renderHistory();
   historyLimit.onchange = ()=> renderHistory();
 
   function fmtDate(ts){
-    try{ return new Date(ts).toLocaleString(); }
-    catch{ return String(ts); }
+    try{ return new Date(ts).toLocaleString(); }catch{ return String(ts); }
   }
 
   function renderHistory(){
@@ -1349,19 +1531,29 @@ function renderQuestionList(){
     `;
 
     historyDetailsWrap.innerHTML = history.map(a=>{
-      const stickerTxt = a.wrong <= 1 ? "⭐ sticker" : "—";
+      const sticker = a.wrong <= 1 ? "⭐ sticker" : "—";
       return `
         <details>
-          <summary>${escapeHtml(fmtDate(a.ts))} • ${escapeHtml(a.lessonTitle)} • ${a.correct}/${a.total} • ${stickerTxt}</summary>
+          <summary>${escapeHtml(fmtDate(a.ts))} • ${escapeHtml(a.lessonTitle)} • ${a.correct}/${a.total} • ${sticker}</summary>
           <div class="muted small" style="margin-top:8px;">Details per vraag:</div>
           <ol style="margin:8px 0 0 18px; padding:0;">
             ${(a.details || []).map(d=>{
               const ok = d.isCorrect ? "✅" : "❌";
-              const chosen = (d.chosenIndex === null || d.chosenIndex === undefined) ? "-" : idxToLetter(d.chosenIndex);
-              const corr = idxToLetter(d.correctIndex);
+              const type = d.type === "multi" ? "multi" : "single";
+              let chosen = "-";
+              let corr = "-";
+
+              if(type === "multi"){
+                chosen = Array.isArray(d.chosen) && d.chosen.length ? d.chosen.map(idxToLetter).join(", ") : "-";
+                corr = Array.isArray(d.correctIndices) && d.correctIndices.length ? d.correctIndices.map(idxToLetter).join(", ") : "-";
+              }else{
+                chosen = (d.chosen === null || d.chosen === undefined) ? "-" : idxToLetter(Number(d.chosen));
+                corr = idxToLetter(Number(d.correctIndex));
+              }
+
               return `<li style="margin:8px 0;">
-                ${ok} <strong>${escapeHtml(d.question)}</strong><br>
-                <span class="muted small">Gekozen: ${chosen} • Juiste: ${corr}</span>
+                ${ok} <strong>${escapeHtml(d.question).replaceAll("\n","<br>")}</strong>
+                <div class="muted small" style="margin-top:4px;">Type: ${type} • Gekozen: <strong>${escapeHtml(chosen)}</strong> • Juiste: <strong>${escapeHtml(corr)}</strong></div>
               </li>`;
             }).join("")}
           </ol>
@@ -1388,7 +1580,7 @@ function renderQuestionList(){
     URL.revokeObjectURL(url);
   };
 
-  // ===== Zoom overlay =====
+  // ===== Image zoom overlay =====
   const zoomOverlay = document.getElementById("zoomOverlay");
   const zoomImg = document.getElementById("zoomImg");
   kidImg.addEventListener("click", ()=>{
@@ -1402,6 +1594,13 @@ function renderQuestionList(){
   });
 
   // ===== Init =====
+  // Ensure currentLessonId is valid
+  if(!DB.lessons.find(l=>l.id===currentLessonId)) currentLessonId = DB.lessons[0]?.id || currentLessonId;
+
+  // Set initial parent question UI state
+  setQuestionTypeUI();
+
+  // Start in kid mode
   setMode("kid");
 </script>
 </body>
