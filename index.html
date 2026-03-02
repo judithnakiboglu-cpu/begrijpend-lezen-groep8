@@ -45,6 +45,8 @@
     /* Reading text formatting */
     #kidText{
       margin: 0;
+      width: 100%;
+      max-width: 100%;
       font-size: 17px;
       line-height: 1.75;
       letter-spacing: 0.1px;
@@ -62,12 +64,15 @@
     .imgWrap{ text-align:center; margin:18px 0; }
     .imgWrap img{ max-width:100%; max-height:360px; border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.15); }
 
-    /* Text + image side-by-side */
+    /* Text + image side-by-side (but full width if no side image) */
     .textLayout{
       display:grid;
       grid-template-columns: 1fr 320px;
       gap:16px;
       align-items:start;
+    }
+    .textLayout.noMedia{
+      grid-template-columns: 1fr !important;
     }
     .sideMedia img{
       width:100%;
@@ -126,8 +131,6 @@
       padding:12px;
       margin-top:10px;
     }
-    .lockRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .lockRow > *{ flex:1; min-width:220px; }
   </style>
 </head>
 
@@ -137,7 +140,7 @@
       <div class="topbar">
         <div>
           <h1>Begrijpend Lezen – Groep 8</h1>
-          <div class="muted small">Leerling oefent ✅❌ — Ouder maakt teksten & vragen — Resultaten + locks worden lokaal opgeslagen.</div>
+          <div class="muted small">Leerling oefent ✅❌ — Ouder maakt teksten & vragen — Alles wordt lokaal opgeslagen.</div>
         </div>
         <div class="tabs">
           <button class="tab active" id="tabKid" type="button">Leerling</button>
@@ -190,7 +193,7 @@
         <div class="pill">Tekst</div>
         <h2 id="kidTitle">—</h2>
 
-        <div class="textLayout">
+        <div class="textLayout" id="textLayout">
           <div id="kidText"></div>
 
           <div id="kidSideMedia" class="sideMedia" style="display:none;">
@@ -246,7 +249,9 @@
         <div class="topbar">
           <div>
             <div class="pill">Teksten & vragen</div>
-            <div class="muted small">Meerkeuze (1 goed) én Multiple choice (meerdere goede).</div>
+            <div class="muted small">
+              ✅ Vraagtypes: <strong>single choice</strong> (1 goed) + <strong>multiple choice</strong> (meerdere goed)
+            </div>
           </div>
           <div class="row" style="margin:0;">
             <button class="primary" id="addLesson" type="button">Nieuwe tekst</button>
@@ -312,7 +317,7 @@
           <div>
             <label class="muted small">Type vraag</label>
             <select id="qType">
-              <option value="single">Meerkeuze (1 goed antwoord)</option>
+              <option value="single">Single choice (1 goed antwoord)</option>
               <option value="multi">Multiple choice (meerdere goede antwoorden)</option>
             </select>
           </div>
@@ -422,7 +427,7 @@
   const PIN_KEY = "bl_parent_pin_v1";
   const HISTORY_KEY = "bl_attempt_history_v1";
 
-  // NEW: lock state per lesson (kid cannot redo until parent unlock)
+  // Lock state per lesson (kid cannot redo until parent unlock)
   const LOCK_KEY = "bl_lesson_locks_v1"; // { [lessonId]: { locked: true, ts: number } }
 
   // ===== Helpers =====
@@ -481,6 +486,8 @@
     if(locks[lessonId]) delete locks[lessonId];
     saveLocks(locks);
   }
+
+  function getPin(){ return localStorage.getItem(PIN_KEY) || ""; }
 
   // ===== Default DB =====
   const defaultDB = {
@@ -547,6 +554,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         l.imageCaption = l.imageCaption || "";
         l.questions = Array.isArray(l.questions) ? l.questions : [];
 
+        // normalize questions
         l.questions.forEach(q=>{
           q.type = q.type === "multi" ? "multi" : "single";
           q.text = q.text || "";
@@ -586,7 +594,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     }catch{ return []; }
   }
   function saveHistory(arr){ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }
-  function getPin(){ return localStorage.getItem(PIN_KEY) || ""; }
 
   // ===== Pretty reading formatter =====
   function formatReadingText(txt){
@@ -700,6 +707,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     correctCount: 0
   };
 
+  // parent edit state
   let editingQuestionIndex = null;
 
   // ===== Tabs =====
@@ -707,7 +715,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   const tabParent = document.getElementById("tabParent");
   const kidView = document.getElementById("kidView");
   const parentView = document.getElementById("parentView");
-
   tabKid.onclick = ()=> setMode("kid");
   tabParent.onclick = ()=> setMode("parent");
 
@@ -776,9 +783,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   };
 
   document.getElementById("restartQuiz").onclick = ()=>{
-    // restart should also obey lock
     if(isLessonLocked(currentLessonId)){
-      renderKid(); // will show lock UI
+      renderKid();
       return;
     }
     resetQuiz();
@@ -837,9 +843,11 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     oneQuestion.innerHTML = `<div class="muted">Klik <strong>Start</strong> om te beginnen.</div>`;
   }
 
+  // Side image + full width text if no side image
   function setSideImage(lesson){
     const url = (lesson.imageUrl || "").trim();
     const cap = (lesson.imageCaption || "").trim();
+    const layout = document.getElementById("textLayout");
 
     if(url){
       kidImg.src = url;
@@ -850,10 +858,12 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       }else{
         kidImgCaption.style.display = "none";
       }
+      layout?.classList.remove("noMedia");
     }else{
       kidSideMedia.style.display = "none";
       kidImg.removeAttribute("src");
       kidImgCaption.style.display = "none";
+      layout?.classList.add("noMedia");
     }
   }
 
@@ -876,14 +886,13 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     scoreNow.textContent = quiz.correctCount;
     progNow.textContent = quiz.started ? (lesson.questions.length ? (quiz.qIndex + 1) : 0) : 0;
 
-    // lock handling
     const lockedNow = isLessonLocked(currentLessonId);
     const pin = getPin();
 
     if(lockedNow){
       kidLockBox.style.display = "";
       kidUnlockMsg.textContent = pin ? "" : "Geen pincode ingesteld. Ga naar Ouder en stel een pincode in.";
-      kidUnlockBtn.disabled = !pin; // require ouder password
+      kidUnlockBtn.disabled = !pin;
       startBtn.disabled = true;
       document.getElementById("restartQuiz").disabled = true;
     }else{
@@ -895,7 +904,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       document.getElementById("restartQuiz").disabled = false;
     }
 
-    // if locked: stop quiz UI
     if(lockedNow){
       quiz.started = false;
       submitBtn.style.display = "none";
@@ -906,14 +914,13 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       return;
     }
 
-    // normal flow
     if(!quiz.started){
       startBtn.style.display = "";
       submitBtn.style.display = "none";
       nextBtn.style.display = "none";
       oneQuestion.innerHTML = `<div class="muted">Klik <strong>Start</strong> om te beginnen.</div>`;
       endScreen.style.display = "none";
-      kidHint.textContent = "Je kunt per vraag maar 1x kiezen.";
+      kidHint.textContent = "Je kunt per vraag maar 1x kiezen (single) of selecteren + controleren (multi).";
     }else{
       startBtn.style.display = "none";
       endScreen.style.display = "none";
@@ -921,7 +928,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     }
   }
 
-  // kid unlock action
   kidUnlockBtn.onclick = ()=>{
     const saved = getPin();
     const entered = (kidUnlockPin.value || "").trim();
@@ -939,6 +945,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     renderKid();
   };
 
+  // ===== Quiz rendering (supports BOTH question types) =====
   function renderOneQuestion(lesson){
     const total = lesson.questions.length;
     if(total === 0){
@@ -953,7 +960,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
     kidHint.textContent = q.type === "multi"
       ? "Multiple choice: je mag meerdere opties aankruisen, daarna ‘Controleer’."
-      : "Meerkeuze: je kiest 1 optie (daarna kun je niet meer veranderen).";
+      : "Single choice: je kiest 1 optie (daarna kun je niet meer veranderen).";
 
     oneQuestion.innerHTML = "";
     const box = document.createElement("div");
@@ -967,6 +974,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     fb.id = "fb";
     box.appendChild(fb);
 
+    // SINGLE: radio, lock immediately
     if(q.type !== "multi"){
       (q.options || []).forEach((opt, oi)=>{
         const lab = document.createElement("label");
@@ -1008,7 +1016,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       return;
     }
 
-    // MULTI
+    // MULTI: checkboxes + submit
     const picked = Array.isArray(chosen) ? chosen.slice() : [];
     const tempPicked = new Set(picked);
 
@@ -1124,7 +1132,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     const correct = quiz.correctCount;
     const wrong = total - correct;
 
-    // save attempt history
     const details = lesson.questions.map((q, i)=>{
       const chosen = quiz.answers[i];
       let isCorrect = false;
@@ -1159,15 +1166,13 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     history.unshift(attempt);
     saveHistory(history.slice(0, 500));
 
-    // LOCK the test AFTER completion
+    // lock test after completion
     lockLesson(lesson.id);
 
-    // stop quiz UI, show end screen
     oneQuestion.innerHTML = "";
     submitBtn.style.display = "none";
     nextBtn.style.display = "none";
 
-    // Sticker only if 0 or 1 wrong
     const stickerWon = (wrong <= 1);
     const chosenSticker = stickerWon ? pickRandomSticker() : null;
 
@@ -1181,9 +1186,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
         ${stickerWon ? `
           <div class="center">
-            <div class="bigSticker" title="${escapeHtml(chosenSticker.label)}">
-              ${chosenSticker.emoji}
-            </div>
+            <div class="bigSticker" title="${escapeHtml(chosenSticker.label)}">${chosenSticker.emoji}</div>
             <div class="muted" style="margin-top:8px;">
               <strong>${wrong===0 ? "PERFECT! 🎉" : "Bijna perfect! ⭐"}</strong>
               <div class="small muted">Sticker verdiend (${escapeHtml(chosenSticker.label)})</div>
@@ -1210,14 +1213,12 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     `;
 
     document.getElementById("backToTopBtn").onclick = ()=>{
-      // after finishing, we keep it locked; go to locked state UI
       quiz.started = false;
       quiz.locked = false;
       renderKid();
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    // IMPORTANT: do NOT call resetQuiz() here (would hide end screen)
     quiz.started = false;
     quiz.locked = false;
   }
@@ -1245,7 +1246,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     }
     localStorage.setItem(PIN_KEY, v);
     pinMsg.textContent = v ? "Pincode opgeslagen." : "Geen pincode ingesteld.";
-    // refresh kid view lock UI if needed
     renderKid();
   };
 
@@ -1344,10 +1344,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     const newLesson = { id: cryptoRandomId(), title: "Nieuwe tekst", text: "", imageUrl:"", imageCaption:"", questions: [] };
     DB.lessons.unshift(newLesson);
     currentLessonId = newLesson.id;
-
-    // new lesson should not be locked
     unlockLesson(newLesson.id);
-
     saveDB();
     renderParent();
     renderLessonDropdown(lessonSelect);
@@ -1362,10 +1359,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     }
     if(!confirm("Weet je zeker dat je deze tekst wilt verwijderen?")) return;
     DB.lessons = DB.lessons.filter(l=>l.id !== currentLessonId);
-
-    // also remove lock state for deleted lesson
     unlockLesson(currentLessonId);
-
     currentLessonId = DB.lessons[0].id;
     saveDB();
     renderParent();
@@ -1380,8 +1374,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     lesson.text = (editText.value || "").trim();
     lesson.imageUrl = (editImgUrl.value || "").trim();
     lesson.imageCaption = (editImgCaption.value || "").trim();
+    unlockLesson(lesson.id); // edits unlock retake
     saveDB();
-
     renderLessonDropdown(parentLessonSelect);
     renderLessonDropdown(lessonSelect);
     renderKid();
@@ -1418,10 +1412,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       lesson.questions[editingQuestionIndex] = payload;
     }
 
-    // Optional: when parent edits the questions, unlock so kid can take again
-    // (comment this out if you prefer locks to remain)
     unlockLesson(lesson.id);
-
     saveDB();
     clearQuestionForm();
     renderQuestionList();
@@ -1468,15 +1459,13 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       questionList.appendChild(div);
     });
 
+    // delete
     questionList.querySelectorAll("button[data-del]").forEach(btn=>{
       btn.onclick = ()=>{
         const idx = Number(btn.getAttribute("data-del"));
         const lesson = getLessonById(currentLessonId);
         lesson.questions.splice(idx, 1);
-
-        // editing changed -> unlock
         unlockLesson(lesson.id);
-
         saveDB();
         clearQuestionForm();
         renderQuestionList();
@@ -1485,6 +1474,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       };
     });
 
+    // edit
     questionList.querySelectorAll("button[data-edit]").forEach(btn=>{
       btn.onclick = ()=>{
         const idx = Number(btn.getAttribute("data-edit"));
@@ -1520,29 +1510,25 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       };
     });
 
+    // up/down
     questionList.querySelectorAll("button[data-up]").forEach(btn=>{
       btn.onclick = ()=>{
         const i = Number(btn.getAttribute("data-up"));
         const lesson = getLessonById(currentLessonId);
         if(i <= 0) return;
         [lesson.questions[i-1], lesson.questions[i]] = [lesson.questions[i], lesson.questions[i-1]];
-
         unlockLesson(lesson.id);
-
         saveDB();
         renderQuestionList();
       };
     });
-
     questionList.querySelectorAll("button[data-down]").forEach(btn=>{
       btn.onclick = ()=>{
         const i = Number(btn.getAttribute("data-down"));
         const lesson = getLessonById(currentLessonId);
         if(i >= lesson.questions.length - 1) return;
         [lesson.questions[i+1], lesson.questions[i]] = [lesson.questions[i], lesson.questions[i+1]];
-
         unlockLesson(lesson.id);
-
         saveDB();
         renderQuestionList();
       };
@@ -1604,7 +1590,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         DB = parsed;
         currentLessonId = DB.lessons[0]?.id || cryptoRandomId();
 
-        // imported lessons: leave locks as-is, but ensure invalid locks don't break
         saveDB();
         alert("Import gelukt!");
         renderParent();
@@ -1639,7 +1624,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     });
     historyLessonFilter.value = "";
   }
-
   historyLessonFilter.onchange = ()=> renderHistory();
   historyLimit.onchange = ()=> renderHistory();
 
@@ -1748,7 +1732,11 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
   // ===== Init =====
   if(!DB.lessons.find(l=>l.id===currentLessonId)) currentLessonId = DB.lessons[0]?.id || currentLessonId;
+
+  // question type UI default
   setQuestionTypeUI();
+
+  // start in kid mode
   setMode("kid");
 </script>
 </body>
