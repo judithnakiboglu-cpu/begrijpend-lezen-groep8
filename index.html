@@ -117,6 +117,17 @@
     /* Parent question editor tweaks */
     #qText{ min-height:90px; }
     .tag{ display:inline-block; padding:2px 8px; border-radius:999px; background:#f1f3ff; font-size:12px; }
+
+    /* Kid lock banner */
+    .lockBanner{
+      border:1px solid #ffe3b0;
+      background:#fff8e6;
+      border-radius:14px;
+      padding:12px;
+      margin-top:10px;
+    }
+    .lockRow{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .lockRow > *{ flex:1; min-width:220px; }
   </style>
 </head>
 
@@ -126,7 +137,7 @@
       <div class="topbar">
         <div>
           <h1>Begrijpend Lezen – Groep 8</h1>
-          <div class="muted small">Leerling oefent ✅❌ — Ouder maakt teksten & vragen — Resultaten worden lokaal opgeslagen.</div>
+          <div class="muted small">Leerling oefent ✅❌ — Ouder maakt teksten & vragen — Resultaten + locks worden lokaal opgeslagen.</div>
         </div>
         <div class="tabs">
           <button class="tab active" id="tabKid" type="button">Leerling</button>
@@ -149,6 +160,28 @@
           <div class="topbar" style="justify-content:flex-end;">
             <div class="pill">Voortgang: <span id="progNow">0</span>/<span id="progTotal">0</span></div>
             <button class="ghost" id="restartQuiz" type="button">Opnieuw</button>
+          </div>
+        </div>
+
+        <!-- LOCK UI (kid) -->
+        <div id="kidLockBox" class="lockBanner" style="display:none;">
+          <div class="pill">🔒 Test is afgerond</div>
+          <div class="muted" style="margin-top:6px;">
+            Deze test is <strong>vergrendeld</strong>. Alleen een ouder kan ontgrendelen om opnieuw te maken.
+          </div>
+          <div class="row" style="margin-top:10px;">
+            <div>
+              <label class="muted small">Ouder pincode</label>
+              <input id="kidUnlockPin" inputmode="numeric" placeholder="Voer pincode in">
+              <div class="muted small" id="kidUnlockMsg" style="margin-top:6px;"></div>
+            </div>
+            <div class="topbar" style="justify-content:flex-end; align-items:flex-end;">
+              <button class="primary" id="kidUnlockBtn" type="button">Ontgrendel</button>
+              <button class="ghost" id="goParentBtn" type="button">Ga naar Ouder</button>
+            </div>
+          </div>
+          <div class="muted small" style="margin-top:6px;">
+            Tip: stel (of wijzig) de pincode in bij <strong>Ouder</strong>.
           </div>
         </div>
       </div>
@@ -190,7 +223,7 @@
       <div class="card" id="parentLockCard">
         <div class="pill">Ouder-modus beveiligen (optioneel)</div>
         <div class="muted small" style="margin:8px 0 12px;">
-          Stel een pincode in zodat je kind niet per ongeluk teksten/vraagjes wijzigt.
+          Stel een pincode in zodat je kind niet per ongeluk teksten/vraagjes wijzigt — én om tests te ontgrendelen.
         </div>
         <div class="row">
           <div>
@@ -389,12 +422,14 @@
   const PIN_KEY = "bl_parent_pin_v1";
   const HISTORY_KEY = "bl_attempt_history_v1";
 
+  // NEW: lock state per lesson (kid cannot redo until parent unlock)
+  const LOCK_KEY = "bl_lesson_locks_v1"; // { [lessonId]: { locked: true, ts: number } }
+
   // ===== Helpers =====
   function cryptoRandomId(){
     return Math.random().toString(16).slice(2) + Date.now().toString(16);
   }
   function clone(obj){
-    // structuredClone fallback (important for older browsers)
     try{ return structuredClone(obj); } catch { return JSON.parse(JSON.stringify(obj)); }
   }
   function escapeHtml(str){
@@ -415,6 +450,36 @@
     if(a.length !== b.length) return false;
     for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false;
     return true;
+  }
+  function fmtDate(ts){
+    try{ return new Date(ts).toLocaleString(); }catch{ return String(ts); }
+  }
+
+  // ===== Locks =====
+  function loadLocks(){
+    try{
+      const raw = localStorage.getItem(LOCK_KEY);
+      if(!raw) return {};
+      const obj = JSON.parse(raw);
+      return obj && typeof obj === "object" ? obj : {};
+    }catch{ return {}; }
+  }
+  function saveLocks(obj){
+    localStorage.setItem(LOCK_KEY, JSON.stringify(obj || {}));
+  }
+  function isLessonLocked(lessonId){
+    const locks = loadLocks();
+    return !!locks?.[lessonId]?.locked;
+  }
+  function lockLesson(lessonId){
+    const locks = loadLocks();
+    locks[lessonId] = { locked:true, ts: Date.now() };
+    saveLocks(locks);
+  }
+  function unlockLesson(lessonId){
+    const locks = loadLocks();
+    if(locks[lessonId]) delete locks[lessonId];
+    saveLocks(locks);
   }
 
   // ===== Default DB =====
@@ -482,7 +547,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         l.imageCaption = l.imageCaption || "";
         l.questions = Array.isArray(l.questions) ? l.questions : [];
 
-        // Normalize questions to support BOTH old and new formats
         l.questions.forEach(q=>{
           q.type = q.type === "multi" ? "multi" : "single";
           q.text = q.text || "";
@@ -490,14 +554,12 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
           q.options = [q.options[0]||"", q.options[1]||"", q.options[2]||"", q.options[3]||""];
 
           if(q.type === "single"){
-            // old format: correctIndex
             if(q.correctIndex === undefined && Array.isArray(q.correctIndices) && q.correctIndices.length){
               q.correctIndex = Number(q.correctIndices[0]) || 0;
             }
             q.correctIndex = Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : 0;
             q.explanation = q.explanation ?? q.explain ?? "";
           }else{
-            // multi format: correctIndices array
             if(!Array.isArray(q.correctIndices)){
               if(Number.isFinite(Number(q.correctIndex))) q.correctIndices = [Number(q.correctIndex)];
               else q.correctIndices = [];
@@ -524,8 +586,9 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     }catch{ return []; }
   }
   function saveHistory(arr){ localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); }
+  function getPin(){ return localStorage.getItem(PIN_KEY) || ""; }
 
-  // ===== Pretty reading formatter (plain text -> HTML) =====
+  // ===== Pretty reading formatter =====
   function formatReadingText(txt){
     if(!txt) return "";
     txt = txt.replace(/\r/g, "");
@@ -533,7 +596,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     const lines = txt.split("\n");
     let html = "";
     let para = [];
-    let listType = null; // "ul" | "ol"
+    let listType = null;
     let listItems = [];
 
     function flushPara(){
@@ -541,7 +604,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       para = [];
       if(!block) return;
 
-      // If single short line without punctuation -> treat as title
       const only = block.split("\n").map(s=>s.trim()).filter(Boolean);
       if(only.length === 1){
         const line = only[0];
@@ -552,7 +614,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         }
       }
 
-      // support [img]...[/img] inside paragraph lines
       const rendered = only.map(l=>{
         const t = l.trim();
         if(t.startsWith("[img]") && t.endsWith("[/img]")){
@@ -577,14 +638,12 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       const line = rawLine.replace(/\s+$/,"");
       const trimmed = line.trim();
 
-      // blank line: close current structures
       if(!trimmed){
         flushPara();
         flushList();
         continue;
       }
 
-      // list detection: "- " or "* " bullets, or "1. " ordered list
       const mUl = trimmed.match(/^[-*]\s+(.*)$/);
       const mOl = trimmed.match(/^\d+\.\s+(.*)$/);
 
@@ -603,7 +662,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         continue;
       }
 
-      // normal line
       flushList();
       para.push(line);
     }
@@ -613,7 +671,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     return html;
   }
 
-  // ===== Stickers (global, changes each finish) =====
+  // ===== Stickers =====
   const STICKERS = [
     { emoji:"🏆", label:"Kampioen" },
     { emoji:"🦊", label:"Slimme vos" },
@@ -634,16 +692,14 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   let DB = loadDB();
   let currentLessonId = DB.lessons[0]?.id || cryptoRandomId();
 
-  // quiz state
   let quiz = {
     started: false,
     qIndex: 0,
     locked: false,
-    answers: [],          // per question: number (single) or array<number> (multi)
+    answers: [],
     correctCount: 0
   };
 
-  // parent edit state
   let editingQuestionIndex = null;
 
   // ===== Tabs =====
@@ -691,10 +747,16 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   const endScreen = document.getElementById("endScreen");
   const kidHint = document.getElementById("kidHint");
 
-  // side image
   const kidSideMedia = document.getElementById("kidSideMedia");
   const kidImg = document.getElementById("kidImg");
   const kidImgCaption = document.getElementById("kidImgCaption");
+
+  // kid lock UI
+  const kidLockBox = document.getElementById("kidLockBox");
+  const kidUnlockPin = document.getElementById("kidUnlockPin");
+  const kidUnlockBtn = document.getElementById("kidUnlockBtn");
+  const kidUnlockMsg = document.getElementById("kidUnlockMsg");
+  document.getElementById("goParentBtn").onclick = ()=> setMode("parent");
 
   function renderLessonDropdown(selectEl){
     selectEl.innerHTML = "";
@@ -714,11 +776,20 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   };
 
   document.getElementById("restartQuiz").onclick = ()=>{
+    // restart should also obey lock
+    if(isLessonLocked(currentLessonId)){
+      renderKid(); // will show lock UI
+      return;
+    }
     resetQuiz();
     renderKid();
   };
 
   startBtn.onclick = ()=>{
+    if(isLessonLocked(currentLessonId)){
+      renderKid();
+      return;
+    }
     const lesson = getLessonById(currentLessonId);
     if(!lesson || lesson.questions.length === 0){
       alert("Er staan nog geen vragen in deze tekst.");
@@ -733,7 +804,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   };
 
   submitBtn.onclick = ()=>{
-    // only used for multi questions
     const lesson = getLessonById(currentLessonId);
     if(!quiz.started) return;
     const q = lesson.questions[quiz.qIndex];
@@ -764,6 +834,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     submitBtn.style.display = "none";
     nextBtn.style.display = "none";
     endScreen.style.display = "none";
+    oneQuestion.innerHTML = `<div class="muted">Klik <strong>Start</strong> om te beginnen.</div>`;
   }
 
   function setSideImage(lesson){
@@ -802,10 +873,40 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
     progTotal.textContent = lesson.questions.length;
     scoreTotal.textContent = lesson.questions.length;
-
     scoreNow.textContent = quiz.correctCount;
     progNow.textContent = quiz.started ? (lesson.questions.length ? (quiz.qIndex + 1) : 0) : 0;
 
+    // lock handling
+    const lockedNow = isLessonLocked(currentLessonId);
+    const pin = getPin();
+
+    if(lockedNow){
+      kidLockBox.style.display = "";
+      kidUnlockMsg.textContent = pin ? "" : "Geen pincode ingesteld. Ga naar Ouder en stel een pincode in.";
+      kidUnlockBtn.disabled = !pin; // require ouder password
+      startBtn.disabled = true;
+      document.getElementById("restartQuiz").disabled = true;
+    }else{
+      kidLockBox.style.display = "none";
+      kidUnlockPin.value = "";
+      kidUnlockMsg.textContent = "";
+      kidUnlockBtn.disabled = false;
+      startBtn.disabled = false;
+      document.getElementById("restartQuiz").disabled = false;
+    }
+
+    // if locked: stop quiz UI
+    if(lockedNow){
+      quiz.started = false;
+      submitBtn.style.display = "none";
+      nextBtn.style.display = "none";
+      endScreen.style.display = "none";
+      oneQuestion.innerHTML = `<div class="muted">Deze test is vergrendeld. Alleen een ouder kan ontgrendelen.</div>`;
+      kidHint.textContent = "Test vergrendeld.";
+      return;
+    }
+
+    // normal flow
     if(!quiz.started){
       startBtn.style.display = "";
       submitBtn.style.display = "none";
@@ -819,6 +920,24 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       renderOneQuestion(lesson);
     }
   }
+
+  // kid unlock action
+  kidUnlockBtn.onclick = ()=>{
+    const saved = getPin();
+    const entered = (kidUnlockPin.value || "").trim();
+    if(!saved){
+      kidUnlockMsg.textContent = "Geen pincode ingesteld. Ga naar Ouder en stel een pincode in.";
+      return;
+    }
+    if(entered !== saved){
+      kidUnlockMsg.textContent = "Pincode klopt niet.";
+      return;
+    }
+    unlockLesson(currentLessonId);
+    kidUnlockMsg.textContent = "Ontgrendeld ✅";
+    resetQuiz();
+    renderKid();
+  };
 
   function renderOneQuestion(lesson){
     const total = lesson.questions.length;
@@ -848,7 +967,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     fb.id = "fb";
     box.appendChild(fb);
 
-    // SINGLE (radio) = lock immediately on click (like before)
     if(q.type !== "multi"){
       (q.options || []).forEach((opt, oi)=>{
         const lab = document.createElement("label");
@@ -890,7 +1008,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       return;
     }
 
-    // MULTI (checkbox) = allow select many, then "Controleer"
+    // MULTI
     const picked = Array.isArray(chosen) ? chosen.slice() : [];
     const tempPicked = new Set(picked);
 
@@ -908,7 +1026,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       c.onchange = ()=>{
         if(c.checked) tempPicked.add(oi);
         else tempPicked.delete(oi);
-        // store as the user ticks (still not locked until submit)
         quiz.answers[quiz.qIndex] = Array.from(tempPicked).sort((a,b)=>a-b);
       };
 
@@ -920,16 +1037,13 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     oneQuestion.appendChild(box);
 
     if(quiz.locked){
-      // already submitted/locked
       showLockedFeedbackMulti(q, picked);
       submitBtn.style.display = "none";
       nextBtn.style.display = "";
       nextBtn.textContent = (quiz.qIndex === total - 1) ? "Resultaat" : "Volgende";
     }else{
-      // not locked yet
       submitBtn.style.display = "";
       nextBtn.style.display = "none";
-      // if no selection yet, keep empty array stored so it doesn't crash
       if(quiz.answers[quiz.qIndex] == null) quiz.answers[quiz.qIndex] = [];
     }
   }
@@ -958,7 +1072,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     if(q.type !== "multi") return;
 
     const chosenArr = normalizeIndices(quiz.answers[quiz.qIndex] || []);
-    // lock only once
     if(quiz.locked) return;
 
     quiz.answers[quiz.qIndex] = chosenArr;
@@ -999,7 +1112,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
     fb.className = "feedback " + (good ? "good" : "bad");
     fb.innerHTML = good
-      ? `<span class="ok">✅ Goed!</span> <span class="muted small">(${chosenTxt})</span>${explain}`
+      ? `<span class="ok">✅ Goed!</span> <span class="muted small">(${escapeHtml(chosenTxt)})</span>${explain}`
       : `<span class="no">❌ Niet helemaal.</span>
          <div class="muted small" style="margin-top:6px;">Jij koos: <strong>${escapeHtml(chosenTxt)}</strong> • Juiste: <strong>${escapeHtml(corrTxt)}</strong></div>
          ${explain}`;
@@ -1011,6 +1124,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     const correct = quiz.correctCount;
     const wrong = total - correct;
 
+    // save attempt history
     const details = lesson.questions.map((q, i)=>{
       const chosen = quiz.answers[i];
       let isCorrect = false;
@@ -1045,10 +1159,15 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     history.unshift(attempt);
     saveHistory(history.slice(0, 500));
 
+    // LOCK the test AFTER completion
+    lockLesson(lesson.id);
+
+    // stop quiz UI, show end screen
     oneQuestion.innerHTML = "";
     submitBtn.style.display = "none";
     nextBtn.style.display = "none";
 
+    // Sticker only if 0 or 1 wrong
     const stickerWon = (wrong <= 1);
     const chosenSticker = stickerWon ? pickRandomSticker() : null;
 
@@ -1066,34 +1185,49 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
               ${chosenSticker.emoji}
             </div>
             <div class="muted" style="margin-top:8px;">
-              <strong>Sticker verdiend!</strong> (${escapeHtml(chosenSticker.label)})
+              <strong>${wrong===0 ? "PERFECT! 🎉" : "Bijna perfect! ⭐"}</strong>
+              <div class="small muted">Sticker verdiend (${escapeHtml(chosenSticker.label)})</div>
             </div>
           </div>
         ` : `
-          <div class="muted">Geen sticker deze keer. Probeer opnieuw 💪</div>
+          <div class="muted"><strong>Goed geprobeerd!</strong> Geen sticker deze keer. Probeer later opnieuw 💪</div>
         `}
 
         <div style="height:14px;"></div>
-        <button class="primary" id="againBtn" type="button">Nog een keer</button>
+        <div class="lockBanner" style="display:inline-block; text-align:left; max-width:620px;">
+          <div class="pill">🔒 Vergrendeld</div>
+          <div class="muted" style="margin-top:6px;">
+            Deze test is nu vergrendeld. Een ouder moet ontgrendelen om opnieuw te maken.
+          </div>
+          <div class="muted small" style="margin-top:6px;">
+            Ga terug naar boven bij de tekstkeuze om te ontgrendelen.
+          </div>
+        </div>
+
+        <div style="height:14px;"></div>
+        <button class="ghost" id="backToTopBtn" type="button">Terug</button>
       </div>
     `;
 
-    document.getElementById("againBtn").onclick = ()=>{
-      resetQuiz();
+    document.getElementById("backToTopBtn").onclick = ()=>{
+      // after finishing, we keep it locked; go to locked state UI
+      quiz.started = false;
+      quiz.locked = false;
       renderKid();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
-    resetQuiz();
+    // IMPORTANT: do NOT call resetQuiz() here (would hide end screen)
+    quiz.started = false;
+    quiz.locked = false;
   }
 
-  // ===== Parent lock =====
+  // ===== Parent lock (editor access) =====
   const parentLockCard = document.getElementById("parentLockCard");
   const parentEditor = document.getElementById("parentEditor");
   const pinSet = document.getElementById("pinSet");
   const pinEnter = document.getElementById("pinEnter");
   const pinMsg = document.getElementById("pinMsg");
-
-  function getPin(){ return localStorage.getItem(PIN_KEY) || ""; }
 
   function setupParentLock(){
     pinMsg.textContent = "";
@@ -1111,6 +1245,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     }
     localStorage.setItem(PIN_KEY, v);
     pinMsg.textContent = v ? "Pincode opgeslagen." : "Geen pincode ingesteld.";
+    // refresh kid view lock UI if needed
+    renderKid();
   };
 
   document.getElementById("unlock").onclick = ()=>{
@@ -1133,7 +1269,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   const editImgCaption = document.getElementById("editImgCaption");
   const questionList = document.getElementById("questionList");
 
-  // question form
   const qTypeEl = document.getElementById("qType");
   const qTextEl = document.getElementById("qText");
   const aEls = ["a0","a1","a2","a3"].map(id => document.getElementById(id));
@@ -1209,6 +1344,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     const newLesson = { id: cryptoRandomId(), title: "Nieuwe tekst", text: "", imageUrl:"", imageCaption:"", questions: [] };
     DB.lessons.unshift(newLesson);
     currentLessonId = newLesson.id;
+
+    // new lesson should not be locked
+    unlockLesson(newLesson.id);
+
     saveDB();
     renderParent();
     renderLessonDropdown(lessonSelect);
@@ -1223,6 +1362,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     }
     if(!confirm("Weet je zeker dat je deze tekst wilt verwijderen?")) return;
     DB.lessons = DB.lessons.filter(l=>l.id !== currentLessonId);
+
+    // also remove lock state for deleted lesson
+    unlockLesson(currentLessonId);
+
     currentLessonId = DB.lessons[0].id;
     saveDB();
     renderParent();
@@ -1275,6 +1418,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       lesson.questions[editingQuestionIndex] = payload;
     }
 
+    // Optional: when parent edits the questions, unlock so kid can take again
+    // (comment this out if you prefer locks to remain)
+    unlockLesson(lesson.id);
+
     saveDB();
     clearQuestionForm();
     renderQuestionList();
@@ -1321,12 +1468,15 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       questionList.appendChild(div);
     });
 
-    // delete
     questionList.querySelectorAll("button[data-del]").forEach(btn=>{
       btn.onclick = ()=>{
         const idx = Number(btn.getAttribute("data-del"));
         const lesson = getLessonById(currentLessonId);
         lesson.questions.splice(idx, 1);
+
+        // editing changed -> unlock
+        unlockLesson(lesson.id);
+
         saveDB();
         clearQuestionForm();
         renderQuestionList();
@@ -1335,7 +1485,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       };
     });
 
-    // edit
     questionList.querySelectorAll("button[data-edit]").forEach(btn=>{
       btn.onclick = ()=>{
         const idx = Number(btn.getAttribute("data-edit"));
@@ -1371,25 +1520,29 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       };
     });
 
-    // up
     questionList.querySelectorAll("button[data-up]").forEach(btn=>{
       btn.onclick = ()=>{
         const i = Number(btn.getAttribute("data-up"));
         const lesson = getLessonById(currentLessonId);
         if(i <= 0) return;
         [lesson.questions[i-1], lesson.questions[i]] = [lesson.questions[i], lesson.questions[i-1]];
+
+        unlockLesson(lesson.id);
+
         saveDB();
         renderQuestionList();
       };
     });
 
-    // down
     questionList.querySelectorAll("button[data-down]").forEach(btn=>{
       btn.onclick = ()=>{
         const i = Number(btn.getAttribute("data-down"));
         const lesson = getLessonById(currentLessonId);
         if(i >= lesson.questions.length - 1) return;
         [lesson.questions[i+1], lesson.questions[i]] = [lesson.questions[i], lesson.questions[i+1]];
+
+        unlockLesson(lesson.id);
+
         saveDB();
         renderQuestionList();
       };
@@ -1428,7 +1581,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
           l.imageCaption = l.imageCaption || "";
           l.questions = Array.isArray(l.questions) ? l.questions : [];
 
-          // normalize like loadDB
           l.questions.forEach(q=>{
             q.type = q.type === "multi" ? "multi" : "single";
             q.text = q.text || "";
@@ -1451,6 +1603,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
         DB = parsed;
         currentLessonId = DB.lessons[0]?.id || cryptoRandomId();
+
+        // imported lessons: leave locks as-is, but ensure invalid locks don't break
         saveDB();
         alert("Import gelukt!");
         renderParent();
@@ -1489,10 +1643,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   historyLessonFilter.onchange = ()=> renderHistory();
   historyLimit.onchange = ()=> renderHistory();
 
-  function fmtDate(ts){
-    try{ return new Date(ts).toLocaleString(); }catch{ return String(ts); }
-  }
-
   function renderHistory(){
     const filterLesson = historyLessonFilter.value || "";
     const limit = Math.max(1, Math.min(500, Number(historyLimit.value || 50)));
@@ -1515,6 +1665,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
             <th>Tekst</th>
             <th>Score</th>
             <th>Fouten</th>
+            <th>Lock</th>
           </tr>
         </thead>
         <tbody>
@@ -1524,6 +1675,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
               <td>${escapeHtml(a.lessonTitle)}</td>
               <td><strong>${a.correct}/${a.total}</strong></td>
               <td>${a.wrong}</td>
+              <td>${a.lessonId && isLessonLocked(a.lessonId) ? "🔒" : "—"}</td>
             </tr>
           `).join("")}
         </tbody>
@@ -1532,9 +1684,10 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
 
     historyDetailsWrap.innerHTML = history.map(a=>{
       const sticker = a.wrong <= 1 ? "⭐ sticker" : "—";
+      const locked = isLessonLocked(a.lessonId) ? "🔒 locked" : "—";
       return `
         <details>
-          <summary>${escapeHtml(fmtDate(a.ts))} • ${escapeHtml(a.lessonTitle)} • ${a.correct}/${a.total} • ${sticker}</summary>
+          <summary>${escapeHtml(fmtDate(a.ts))} • ${escapeHtml(a.lessonTitle)} • ${a.correct}/${a.total} • ${sticker} • ${locked}</summary>
           <div class="muted small" style="margin-top:8px;">Details per vraag:</div>
           <ol style="margin:8px 0 0 18px; padding:0;">
             ${(a.details || []).map(d=>{
@@ -1594,13 +1747,8 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   });
 
   // ===== Init =====
-  // Ensure currentLessonId is valid
   if(!DB.lessons.find(l=>l.id===currentLessonId)) currentLessonId = DB.lessons[0]?.id || currentLessonId;
-
-  // Set initial parent question UI state
   setQuestionTypeUI();
-
-  // Start in kid mode
   setMode("kid");
 </script>
 </body>
