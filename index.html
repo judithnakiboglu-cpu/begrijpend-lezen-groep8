@@ -978,6 +978,35 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
   const editImgCaption = document.getElementById("editImgCaption");
   const questionList = document.getElementById("questionList");
 
+  let editingQuestionIndex = null;
+
+    const addQuestionBtn = document.getElementById("addQuestion");
+    const qTextEl = document.getElementById("qText");
+    const aEls = ["a0","a1","a2","a3"].map(id => document.getElementById(id));
+    const correctEl = document.getElementById("correct");
+    const explainEl = document.getElementById("explain");
+
+    function clearQuestionForm(){
+      editingQuestionIndex = null;
+      qTextEl.value = "";
+      aEls.forEach(el => el.value = "");
+      correctEl.value = "0";
+      explainEl.value = "";
+      addQuestionBtn.textContent = "Vraag toevoegen";
+    }
+
+    function loadQuestionIntoForm(q, idx){
+      editingQuestionIndex = idx;
+      qTextEl.value = q.text || "";
+      (q.options || []).forEach((v,i)=>{ if(aEls[i]) aEls[i].value = v || ""; });
+      correctEl.value = String(q.correctIndex ?? 0);
+      explainEl.value = q.explanation || "";
+      addQuestionBtn.textContent = "Vraag bijwerken";
+      // scroll to form
+      qTextEl.scrollIntoView({ behavior:"smooth", block:"center" });
+    }
+
+  
   parentLessonSelect.onchange = (e)=>{
     currentLessonId = e.target.value;
     fillEditor();
@@ -995,29 +1024,45 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
   }
 
   function fillEditor(){
-    const lesson = getLessonById(currentLessonId);
-    currentLessonId = lesson.id;
-    editTitle.value = lesson.title || "";
-    editText.value = lesson.text || "";
-    editImgUrl.value = lesson.imageUrl || "";
-    editImgCaption.value = lesson.imageCaption || "";
+      const lesson = getLessonById(currentLessonId);
+      currentLessonId = lesson.id;
 
-    document.getElementById("qText").value = "";
-    ["a0","a1","a2","a3"].forEach(id => document.getElementById(id).value = "");
-    document.getElementById("correct").value = "0";
-    document.getElementById("explain").value = "";
-  }
+      editTitle.value = lesson.title || "";
+      editText.value  = lesson.text  || "";
+      editImgUrl.value = lesson.imageUrl || "";
+      editImgCaption.value = lesson.imageCaption || "";
 
-  document.getElementById("addLesson").onclick = ()=>{
-    const newLesson = { id: cryptoRandomId(), title: "Nieuwe tekst", text: "", imageUrl:"", imageCaption:"", questions: [] };
-    DB.lessons.unshift(newLesson);
-    currentLessonId = newLesson.id;
-    saveDB();
-    renderParent();
-    renderLessonDropdown(lessonSelect);
-    resetQuiz();
-    renderKid();
-  };
+      // BELANGRIJK: alleen form resetten, geen onclick hier!
+      clearQuestionForm();
+    }
+
+addQuestionBtn.onclick = ()=>{
+      const lesson = getLessonById(currentLessonId);
+
+      const qt = (qTextEl.value || "").trim();
+      const opts = aEls.map(el => (el.value || "").trim());
+      const correctIndex = Number(correctEl.value);
+      const explanation = (explainEl.value || "").trim();
+
+      if(!qt){ alert("Vul een vraag in."); return; }
+      if(opts.some(o=>!o)){ alert("Vul alle 4 antwoordopties in."); return; }
+
+      const payload = { text: qt, options: opts, correctIndex, explanation };
+
+      if(editingQuestionIndex === null){
+        // add
+        lesson.questions.push(payload);
+      }else{
+        // update
+        lesson.questions[editingQuestionIndex] = payload;
+      }
+
+      saveDB();
+      clearQuestionForm();
+      renderQuestionList();
+      resetQuiz();
+      renderKid();
+    };    
 
   document.getElementById("deleteLesson").onclick = ()=>{
     if(DB.lessons.length <= 1){
@@ -1071,47 +1116,125 @@ Zet kopjes op een eigen regel en laat daarna een lege regel.`,
     renderKid();
   };
 
-  function renderQuestionList(){
-    const lesson = getLessonById(currentLessonId);
-    questionList.innerHTML = "";
+  function moveQuestion(lesson, from, to){
+  if(to < 0 || to >= lesson.questions.length) return;
+  const tmp = lesson.questions[from];
+  lesson.questions[from] = lesson.questions[to];
+  lesson.questions[to] = tmp;
+}
 
-    if(lesson.questions.length === 0){
-      questionList.innerHTML = `<div class="muted">Nog geen vragen. Voeg hierboven vragen toe (bv. 15).</div>`;
-      return;
+function renderQuestionList(){
+      const lesson = getLessonById(currentLessonId);
+      questionList.innerHTML = "";
+
+      if(lesson.questions.length === 0){
+        questionList.innerHTML = `<div class="muted">Nog geen vragen. Voeg hierboven vragen toe (bv. 15).</div>`;
+        return;
+      }
+
+      lesson.questions.forEach((q, i)=>{
+        const div = document.createElement("div");
+        div.className = "listItem";
+
+        const isEditing = (editingQuestionIndex === i);
+
+        div.innerHTML = `
+          <div class="two">
+            <div>
+              <strong>${i+1}.</strong> ${escapeHtml(q.text || "")}
+              ${isEditing ? ` <span class="pill" style="margin-left:8px;">Bewerken</span>` : ``}
+            </div>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+              <button class="ghost" type="button" data-up="${i}">↑</button>
+              <button class="ghost" type="button" data-down="${i}">↓</button>
+              <button class="primary" type="button" data-edit="${i}">Bewerk</button>
+              <button class="danger" type="button" data-del="${i}">Verwijder</button>
+            </div>
+          </div>
+
+          <div class="muted small" style="margin-top:6px;">
+            A: ${escapeHtml((q.options||[])[0]||"")}<br>
+            B: ${escapeHtml((q.options||[])[1]||"")}<br>
+            C: ${escapeHtml((q.options||[])[2]||"")}<br>
+            D: ${escapeHtml((q.options||[])[3]||"")}<br>
+            <strong>Juiste antwoord:</strong> ${idxToLetter(q.correctIndex)}
+            ${q.explanation ? `<br><strong>Uitleg:</strong> ${escapeHtml(q.explanation)}` : ""}
+          </div>
+        `;
+
+        questionList.appendChild(div);
+      });
+
+      // Up
+      questionList.querySelectorAll("button[data-up]").forEach(btn=>{
+        btn.onclick = ()=>{
+          const idx = Number(btn.getAttribute("data-up"));
+          const lesson = getLessonById(currentLessonId);
+
+          moveQuestion(lesson, idx, idx-1);
+
+          // keep editing index aligned
+          if(editingQuestionIndex === idx) editingQuestionIndex = idx-1;
+          else if(editingQuestionIndex === idx-1) editingQuestionIndex = idx;
+
+          saveDB();
+          renderQuestionList();
+          resetQuiz();
+          renderKid();
+        };
+      });
+
+      // Down
+      questionList.querySelectorAll("button[data-down]").forEach(btn=>{
+        btn.onclick = ()=>{
+          const idx = Number(btn.getAttribute("data-down"));
+          const lesson = getLessonById(currentLessonId);
+
+          moveQuestion(lesson, idx, idx+1);
+
+          if(editingQuestionIndex === idx) editingQuestionIndex = idx+1;
+          else if(editingQuestionIndex === idx+1) editingQuestionIndex = idx;
+
+          saveDB();
+          renderQuestionList();
+          resetQuiz();
+          renderKid();
+        };
+      });
+
+      // Edit
+      questionList.querySelectorAll("button[data-edit]").forEach(btn=>{
+        btn.onclick = ()=>{
+          const idx = Number(btn.getAttribute("data-edit"));
+          const lesson = getLessonById(currentLessonId);
+          const q = lesson.questions[idx];
+          loadQuestionIntoForm(q, idx);
+          renderQuestionList();
+        };
+      });
+
+      // Delete
+      questionList.querySelectorAll("button[data-del]").forEach(btn=>{
+        btn.onclick = ()=>{
+          const idx = Number(btn.getAttribute("data-del"));
+          const lesson = getLessonById(currentLessonId);
+
+          if(!confirm("Deze vraag verwijderen?")) return;
+
+          lesson.questions.splice(idx, 1);
+
+          // adjust editing index
+          if(editingQuestionIndex === idx) clearQuestionForm();
+          else if(editingQuestionIndex !== null && editingQuestionIndex > idx) editingQuestionIndex--;
+
+          saveDB();
+          renderQuestionList();
+          resetQuiz();
+          renderKid();
+        };
+      });
     }
-
-    lesson.questions.forEach((q, i)=>{
-      const div = document.createElement("div");
-      div.className = "listItem";
-      div.innerHTML = `
-        <div class="two">
-          <div><strong>${i+1}.</strong> ${escapeHtml(q.text || "")}</div>
-          <button class="danger" type="button" data-del="${i}">Verwijder</button>
-        </div>
-        <div class="muted small" style="margin-top:6px;">
-          A: ${escapeHtml((q.options||[])[0]||"")}<br>
-          B: ${escapeHtml((q.options||[])[1]||"")}<br>
-          C: ${escapeHtml((q.options||[])[2]||"")}<br>
-          D: ${escapeHtml((q.options||[])[3]||"")}<br>
-          <strong>Juiste antwoord:</strong> ${idxToLetter(q.correctIndex)}
-          ${q.explanation ? `<br><strong>Uitleg:</strong> ${escapeHtml(q.explanation)}` : ""}
-        </div>
-      `;
-      questionList.appendChild(div);
-    });
-
-    questionList.querySelectorAll("button[data-del]").forEach(btn=>{
-      btn.onclick = ()=>{
-        const idx = Number(btn.getAttribute("data-del"));
-        const lesson = getLessonById(currentLessonId);
-        lesson.questions.splice(idx, 1);
-        saveDB();
-        renderQuestionList();
-        resetQuiz();
-        renderKid();
-      };
-    });
-  }
 
   // ===== Import/Export texts =====
   document.getElementById("exportData").onclick = ()=>{
