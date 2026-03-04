@@ -131,6 +131,52 @@
       padding:12px;
       margin-top:10px;
     }
+
+    /* ===== PRINT ===== */
+    #printArea{ display:none; }
+
+    @media print{
+      body{ background:white; }
+      .wrap, .card, .topbar, .tabs, #kidView, #parentView, .zoomOverlay{ display:none !important; }
+
+      #printArea{
+        display:block !important;
+        padding: 0;
+        margin: 0;
+        font-family: system-ui, Arial;
+        color:#000;
+      }
+
+      .pHeader{
+        margin-bottom: 14px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+      }
+      .pTitle{ font-size: 22px; font-weight: 900; margin:0 0 6px 0; }
+      .pMeta{ font-size: 12px; }
+      .pLine{ margin-top: 8px; font-size: 12px; }
+      .pLine span{ display:inline-block; min-width:260px; border-bottom:1px solid #000; height:14px; vertical-align:bottom; }
+
+      .pText{ margin: 14px 0; font-size: 13px; line-height: 1.55; }
+      .pText .title{ font-size:16px; font-weight:900; margin:12px 0 6px; }
+      .pText p{ margin:0 0 10px 0; }
+      .pText ul, .pText ol{ margin:0 0 10px 18px; }
+
+      .pQ{ margin: 14px 0; page-break-inside: avoid; }
+      .pQTitle{ font-weight: 900; margin-bottom: 8px; }
+      .pOpt{ margin: 6px 0; font-size: 13px; display:flex; gap:10px; align-items:flex-start; }
+      .box{ width:14px; height:14px; border:1.6px solid #000; margin-top:2px; flex:0 0 14px; }
+      .circle{ width:14px; height:14px; border:1.6px solid #000; border-radius:50%; margin-top:2px; flex:0 0 14px; }
+
+      .pAnswers{
+        margin-top: 18px;
+        border-top: 2px solid #000;
+        padding-top: 10px;
+        font-size: 12px;
+      }
+
+      .noPrint{ display:none !important; }
+    }
   </style>
 </head>
 
@@ -212,6 +258,7 @@
           <div class="topbar" style="justify-content:flex-end;">
             <div class="pill">Score: <span id="scoreNow">0</span>/<span id="scoreTotal">0</span></div>
             <button class="primary" id="startBtn" type="button">Start</button>
+            <button class="ghost" id="printLessonKid" type="button">Print</button>
             <button class="primary" id="submitBtn" type="button" style="display:none;">Controleer</button>
             <button class="primary" id="nextBtn" type="button" style="display:none;">Volgende</button>
           </div>
@@ -257,6 +304,8 @@
             <button class="primary" id="addLesson" type="button">Nieuwe tekst</button>
             <button class="ghost" id="exportData" type="button">Export teksten</button>
             <button class="ghost" id="importData" type="button">Import teksten</button>
+            <button class="ghost" id="printLessonParent" type="button">Print oefening</button>
+            <button class="ghost" id="printAnswersParent" type="button">Print antwoorden</button>
           </div>
         </div>
 
@@ -420,6 +469,9 @@
   <div class="zoomOverlay" id="zoomOverlay" title="Klik om te sluiten">
     <img id="zoomImg" alt="Zoom">
   </div>
+
+  <!-- Print container -->
+  <div id="printArea"></div>
 
 <script>
   // ===== Storage keys (KEEP THESE to not lose existing content) =====
@@ -1729,6 +1781,91 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     zoomOverlay.style.display = "none";
     zoomImg.removeAttribute("src");
   });
+
+  // ===== Printing (paper worksheet + optional answer key) =====
+  const printArea = document.getElementById("printArea");
+
+  function buildPrintableHtml(lesson, includeAnswers){
+    const now = new Date().toLocaleDateString();
+    const title = escapeHtml(lesson.title || "Oefening");
+    const textHtml = formatReadingText(lesson.text || "");
+
+    const qs = (lesson.questions || []).map((q, i)=>{
+      const qText = escapeHtml(q.text || "").replaceAll("\n","<br>");
+      const isMulti = q.type === "multi";
+      const optMark = isMulti ? "box" : "circle";
+
+      const opts = (q.options || []).map((opt, oi)=>{
+        const o = escapeHtml(opt || "");
+        return `
+          <div class="pOpt">
+            <div class="${optMark}"></div>
+            <div>${idxToLetter(oi)}. ${o}</div>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="pQ">
+          <div class="pQTitle">${i+1}. ${qText} ${isMulti ? '<span style="font-weight:600;">(meerdere antwoorden mogelijk)</span>' : ''}</div>
+          ${opts}
+        </div>
+      `;
+    }).join("");
+
+    let answersHtml = "";
+    if(includeAnswers){
+      const answerLines = (lesson.questions || []).map((q, i)=>{
+        if(q.type === "multi"){
+          const corr = normalizeIndices(q.correctIndices || []).map(idxToLetter).join(", ") || "-";
+          return `<div><strong>${i+1}.</strong> ${corr}</div>`;
+        }else{
+          const corr = idxToLetter(Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : 0);
+          return `<div><strong>${i+1}.</strong> ${corr}</div>`;
+        }
+      }).join("");
+
+      answersHtml = `
+        <div class="pAnswers">
+          <div style="font-weight:900; margin-bottom:6px;">Antwoorden</div>
+          ${answerLines}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="pHeader">
+        <div class="pTitle">${title}</div>
+        <div class="pMeta">Datum: ${escapeHtml(now)} • Groep 8</div>
+        <div class="pLine">Naam: <span></span></div>
+      </div>
+
+      <div class="pText">${textHtml}</div>
+
+      <div>
+        <div style="font-weight:900; font-size:16px; margin: 6px 0 10px;">Vragen</div>
+        ${qs || '<div class="muted">Geen vragen.</div>'}
+      </div>
+
+      ${answersHtml}
+    `;
+  }
+
+  function printLesson(includeAnswers){
+    const lesson = getLessonById(currentLessonId);
+    printArea.innerHTML = buildPrintableHtml(lesson, includeAnswers);
+    window.print();
+  }
+
+  // Hook up buttons (kid + parent)
+  const printLessonKidBtn = document.getElementById("printLessonKid");
+  if(printLessonKidBtn) printLessonKidBtn.onclick = ()=> printLesson(false);
+
+  const printLessonParentBtn = document.getElementById("printLessonParent");
+  if(printLessonParentBtn) printLessonParentBtn.onclick = ()=> printLesson(false);
+
+  const printAnswersParentBtn = document.getElementById("printAnswersParent");
+  if(printAnswersParentBtn) printAnswersParentBtn.onclick = ()=> printLesson(true);
 
   // ===== Init =====
   if(!DB.lessons.find(l=>l.id===currentLessonId)) currentLessonId = DB.lessons[0]?.id || currentLessonId;
