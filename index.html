@@ -606,7 +606,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         l.imageCaption = l.imageCaption || "";
         l.questions = Array.isArray(l.questions) ? l.questions : [];
 
-        // normalize questions
         l.questions.forEach(q=>{
           q.type = q.type === "multi" ? "multi" : "single";
           q.text = q.text || "";
@@ -895,7 +894,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     oneQuestion.innerHTML = `<div class="muted">Klik <strong>Start</strong> om te beginnen.</div>`;
   }
 
-  // Side image + full width text if no side image
   function setSideImage(lesson){
     const url = (lesson.imageUrl || "").trim();
     const cap = (lesson.imageCaption || "").trim();
@@ -997,7 +995,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     renderKid();
   };
 
-  // ===== Quiz rendering (supports BOTH question types) =====
+  // ===== Quiz rendering =====
   function renderOneQuestion(lesson){
     const total = lesson.questions.length;
     if(total === 0){
@@ -1026,7 +1024,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     fb.id = "fb";
     box.appendChild(fb);
 
-    // SINGLE: radio, lock immediately
     if(q.type !== "multi"){
       (q.options || []).forEach((opt, oi)=>{
         const lab = document.createElement("label");
@@ -1068,7 +1065,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       return;
     }
 
-    // MULTI: checkboxes + submit
     const picked = Array.isArray(chosen) ? chosen.slice() : [];
     const tempPicked = new Set(picked);
 
@@ -1218,7 +1214,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     history.unshift(attempt);
     saveHistory(history.slice(0, 500));
 
-    // lock test after completion
     lockLesson(lesson.id);
 
     oneQuestion.innerHTML = "";
@@ -1275,7 +1270,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     quiz.locked = false;
   }
 
-  // ===== Parent lock (editor access) =====
+  // ===== Parent lock =====
   const parentLockCard = document.getElementById("parentLockCard");
   const parentEditor = document.getElementById("parentEditor");
   const pinSet = document.getElementById("pinSet");
@@ -1426,7 +1421,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     lesson.text = (editText.value || "").trim();
     lesson.imageUrl = (editImgUrl.value || "").trim();
     lesson.imageCaption = (editImgCaption.value || "").trim();
-    unlockLesson(lesson.id); // edits unlock retake
+    unlockLesson(lesson.id);
     saveDB();
     renderLessonDropdown(parentLessonSelect);
     renderLessonDropdown(lessonSelect);
@@ -1511,7 +1506,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       questionList.appendChild(div);
     });
 
-    // delete
     questionList.querySelectorAll("button[data-del]").forEach(btn=>{
       btn.onclick = ()=>{
         const idx = Number(btn.getAttribute("data-del"));
@@ -1526,7 +1520,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       };
     });
 
-    // edit
     questionList.querySelectorAll("button[data-edit]").forEach(btn=>{
       btn.onclick = ()=>{
         const idx = Number(btn.getAttribute("data-edit"));
@@ -1562,7 +1555,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
       };
     });
 
-    // up/down
     questionList.querySelectorAll("button[data-up]").forEach(btn=>{
       btn.onclick = ()=>{
         const i = Number(btn.getAttribute("data-up"));
@@ -1599,51 +1591,114 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     URL.revokeObjectURL(url);
   };
 
+  function normalizeQuestionForImport(q){
+    const nq = {
+      type: q.type === "multi" ? "multi" : "single",
+      text: q.text || "",
+      options: Array.isArray(q.options) ? q.options : ["","","",""]
+    };
+
+    nq.options = [
+      nq.options[0] || "",
+      nq.options[1] || "",
+      nq.options[2] || "",
+      nq.options[3] || ""
+    ];
+
+    if(nq.type === "single"){
+      if(q.correctIndex === undefined && Array.isArray(q.correctIndices) && q.correctIndices.length){
+        nq.correctIndex = Number(q.correctIndices[0]) || 0;
+      }else{
+        nq.correctIndex = Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : 0;
+      }
+      nq.explanation = q.explanation ?? q.explain ?? "";
+    }else{
+      if(Array.isArray(q.correctIndices)){
+        nq.correctIndices = normalizeIndices(q.correctIndices);
+      }else if(Number.isFinite(Number(q.correctIndex))){
+        nq.correctIndices = [Number(q.correctIndex)];
+      }else{
+        nq.correctIndices = [];
+      }
+      nq.explanation = q.explanation ?? q.explain ?? "";
+    }
+
+    return nq;
+  }
+
+  function normalizeLessonForImport(l){
+    return {
+      id: l.id || cryptoRandomId(),
+      title: l.title || "Zonder titel",
+      text: l.text || "",
+      imageUrl: l.imageUrl || "",
+      imageCaption: l.imageCaption || "",
+      questions: Array.isArray(l.questions) ? l.questions.map(normalizeQuestionForImport) : []
+    };
+  }
+
+  function makeLessonFingerprint(lesson){
+    return [
+      (lesson.title || "").trim().toLowerCase(),
+      (lesson.text || "").trim().toLowerCase(),
+      (lesson.imageUrl || "").trim().toLowerCase(),
+      JSON.stringify((lesson.questions || []).map(q => ({
+        type: q.type || "single",
+        text: (q.text || "").trim().toLowerCase(),
+        options: (q.options || []).map(o => (o || "").trim().toLowerCase())
+      })))
+    ].join("||");
+  }
+
   document.getElementById("importData").onclick = async ()=>{
     const inp = document.createElement("input");
     inp.type = "file";
     inp.accept = "application/json";
+
     inp.onchange = async ()=>{
       const file = inp.files?.[0];
       if(!file) return;
+
       const txt = await file.text();
+
       try{
         const parsed = JSON.parse(txt);
         if(!parsed || !Array.isArray(parsed.lessons)) throw new Error();
 
-        parsed.lessons.forEach(l=>{
-          l.id = l.id || cryptoRandomId();
-          l.title = l.title || "Zonder titel";
-          l.text = l.text || "";
-          l.imageUrl = l.imageUrl || "";
-          l.imageCaption = l.imageCaption || "";
-          l.questions = Array.isArray(l.questions) ? l.questions : [];
+        const importedLessons = parsed.lessons.map(normalizeLessonForImport);
 
-          l.questions.forEach(q=>{
-            q.type = q.type === "multi" ? "multi" : "single";
-            q.text = q.text || "";
-            q.options = Array.isArray(q.options) ? q.options : ["","","",""];
-            q.options = [q.options[0]||"", q.options[1]||"", q.options[2]||"", q.options[3]||""];
+        const existingIds = new Set(DB.lessons.map(l => l.id));
+        const existingFingerprints = new Set(DB.lessons.map(makeLessonFingerprint));
 
-            if(q.type === "single"){
-              q.correctIndex = Number.isFinite(Number(q.correctIndex)) ? Number(q.correctIndex) : 0;
-              q.explanation = q.explanation ?? q.explain ?? "";
-            }else{
-              if(!Array.isArray(q.correctIndices)){
-                if(Number.isFinite(Number(q.correctIndex))) q.correctIndices = [Number(q.correctIndex)];
-                else q.correctIndices = [];
-              }
-              q.correctIndices = normalizeIndices(q.correctIndices);
-              q.explanation = q.explanation ?? q.explain ?? "";
-            }
-          });
+        let added = 0;
+        let skipped = 0;
+
+        importedLessons.forEach(lesson=>{
+          if(existingIds.has(lesson.id)){
+            lesson.id = cryptoRandomId();
+          }
+
+          const fp = makeLessonFingerprint(lesson);
+
+          if(existingFingerprints.has(fp)){
+            skipped++;
+            return;
+          }
+
+          DB.lessons.push(lesson);
+          existingIds.add(lesson.id);
+          existingFingerprints.add(fp);
+          unlockLesson(lesson.id);
+          added++;
         });
 
-        DB = parsed;
-        currentLessonId = DB.lessons[0]?.id || cryptoRandomId();
-
         saveDB();
-        alert("Import gelukt!");
+
+        if(!DB.lessons.find(l => l.id === currentLessonId)){
+          currentLessonId = DB.lessons[0]?.id || cryptoRandomId();
+        }
+
+        alert(`Import gelukt! ${added} nieuwe tekst(en) toegevoegd, ${skipped} overgeslagen.`);
         renderParent();
         renderLessonDropdown(lessonSelect);
         resetQuiz();
@@ -1652,6 +1707,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
         alert("Import mislukt: dit bestand is geen geldige export.");
       }
     };
+
     inp.click();
   };
 
@@ -1782,7 +1838,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     zoomImg.removeAttribute("src");
   });
 
-  // ===== Printing (paper worksheet + optional answer key) =====
+  // ===== Printing =====
   const printArea = document.getElementById("printArea");
 
   function buildPrintableHtml(lesson, includeAnswers){
@@ -1857,7 +1913,6 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
     window.print();
   }
 
-  // Hook up buttons (kid + parent)
   const printLessonKidBtn = document.getElementById("printLessonKid");
   if(printLessonKidBtn) printLessonKidBtn.onclick = ()=> printLesson(false);
 
@@ -1870,10 +1925,7 @@ Dit is een voorbeeld van een kopje. Zet kopjes op een eigen regel en laat daarna
   // ===== Init =====
   if(!DB.lessons.find(l=>l.id===currentLessonId)) currentLessonId = DB.lessons[0]?.id || currentLessonId;
 
-  // question type UI default
   setQuestionTypeUI();
-
-  // start in kid mode
   setMode("kid");
 </script>
 </body>
